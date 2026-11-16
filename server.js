@@ -9,21 +9,22 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
-const { OAuth2Client } = require('google-auth-library');
 
 // ---------- Sozlamalar ----------
 const isProd = process.env.NODE_ENV === 'production';
 const DATABASE_URL = (process.env.DATABASE_URL || '').trim();
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim();
 const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').toLowerCase().trim();
+const OWNER_PASSWORD = process.env.OWNER_PASSWORD || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function checkConfig() {
   const problems = [];
   if (!DATABASE_URL) problems.push('DATABASE_URL berilmagan (Railway: ${{Postgres.DATABASE_URL}})');
   if (isProd && SESSION_SECRET.length < 32) problems.push('SESSION_SECRET kamida 32 belgi bo‘lishi kerak');
-  if (!OWNER_EMAIL) console.warn('OGOHLANTIRISH: OWNER_EMAIL berilmagan — hech kim sayt egasi bo‘la olmaydi');
-  if (!GOOGLE_CLIENT_ID) console.warn('OGOHLANTIRISH: GOOGLE_CLIENT_ID berilmagan — Google orqali kirish ishlamaydi');
+  if (!EMAIL_RE.test(OWNER_EMAIL)) problems.push('OWNER_EMAIL berilmagan yoki noto‘g‘ri (sayt egasining emaili)');
+  if (OWNER_PASSWORD.length < 8) problems.push('OWNER_PASSWORD kamida 8 belgi bo‘lishi kerak (sayt egasining paroli)');
   if (problems.length) {
     console.error('Server ishga tushmadi. Railway Variables bo‘limini tekshiring:\n - ' + problems.join('\n - '));
     process.exit(1);
@@ -35,7 +36,6 @@ const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
-const google = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const QUESTIONS = 36;
 const MAX_TOURS = 36;
@@ -74,9 +74,31 @@ async function init() {
     action TEXT NOT NULL,
     detail JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-  // OWNER_EMAIL o'zgargan bo'lsa: eski egani oddiy foydalanuvchiga tushirish, yangisini egaga ko'tarish
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
+  // Sayt egasi Railway'dagi OWNER_EMAIL / OWNER_PASSWORD dan yaratiladi (har ishga tushishda yangilanadi)
   await pool.query(`UPDATE app_users SET role = 'user' WHERE role = 'owner' AND email <> $1`, [OWNER_EMAIL]);
-  await pool.query(`UPDATE app_users SET role = 'owner' WHERE email = $1`, [OWNER_EMAIL]);
+  await pool.query(
+    `INSERT INTO app_users(id, email, name, role, password_hash) VALUES ($1, $2, 'Sayt egasi', 'owner', $3)
+     ON CONFLICT (email) DO UPDATE SET role = 'owner', password_hash = EXCLUDED.password_hash`,
+    ['u' + crypto.randomUUID(), OWNER_EMAIL, await hashPassword(OWNER_PASSWORD)]);
+}
+
+// ---------- Parollar (scrypt) ----------
+const scrypt = (pw, salt) => new Promise((ok, fail) =>
+  crypto.scrypt(pw, salt, 64, (err, key) => (err ? fail(err) : ok(key))));
+async function hashPassword(pw) {
+  const salt = crypto.randomBytes(16);
+  return 'scrypt$' + salt.toString('hex') + '$' + (await scrypt(pw, salt)).toString('hex');
+}
+async function checkPassword(pw, stored) {
+  const [kind, saltHex, keyHex] = String(stored || '').split('$');
+  if (kind !== 'scrypt' || !saltHex || !keyHex) {
+    await scrypt(pw, 'timing-equaliser');
+    return false;
+  }
+  const key = await scrypt(pw, Buffer.from(saltHex, 'hex'));
+  const expected = Buffer.from(keyHex, 'hex');
+  return key.length === expected.length && crypto.timingSafeEqual(key, expected);
 }
 
 // ---------- Ilova ----------
@@ -93,7 +115,7 @@ app.use(session({
   cookie: { httpOnly: true, sameSite: 'lax', secure: isProd, maxAge: 7 * 86400000 },
 }));
 
-const USER_FIELDS = 'id, email, name, picture, role, first_seen, last_seen';
+const USER_FIELDS = 'id, email, name, role, first_seen, last_seen';
 const isStaff = (u) => u && (u.role === 'admin' || u.role === 'owner');
 
 app.use(async (req, res, next) => {
@@ -190,43 +212,56 @@ async function update(req, res, action, detail, fn) {
 app.get('/api/health', async (req, res) => {
   try { await pool.query('SELECT 1'); res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); }
 });
-app.get('/api/config', (req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID }));
 app.get('/api/me', (req, res) => res.json({ user: req.user || null }));
 
-app.post('/api/auth/google',
-  rateLimit({ windowMs: 60000, limit: 15, standardHeaders: 'draft-7', legacyHeaders: false }),
-  async (req, res) => {
-    let p;
-    try {
-      const credential = String(req.body.credential || '');
-      if (!credential || credential.length > 5000) bad('Google tasdiqlash tokeni yo‘q', 401);
-      const ticket = await google.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
-      p = ticket.getPayload();
-      if (!p?.email_verified) bad('Google email tasdiqlanmagan', 401);
-    } catch (e) {
-      return res.status(401).json({ error: 'Google orqali kirish tasdiqlanmadi: ' + e.message });
-    }
-    try {
-      const email = p.email.toLowerCase();
-      const isOwner = !!OWNER_EMAIL && email === OWNER_EMAIL;
-      const { rows } = await pool.query(
-        `INSERT INTO app_users(id, email, name, picture, role) VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name,
-           picture = EXCLUDED.picture, last_seen = NOW(),
-           role = CASE WHEN $6 THEN 'owner'
-                       WHEN app_users.role = 'owner' THEN 'user'
-                       ELSE app_users.role END
-         RETURNING ${USER_FIELDS}`,
-        [p.sub, email, (p.name || email).slice(0, 180), (p.picture || '').slice(0, 800), isOwner ? 'owner' : 'user', isOwner]);
-      await new Promise((ok, fail) => req.session.regenerate((err) => (err ? fail(err) : ok())));
-      req.session.uid = p.sub;
-      await new Promise((ok, fail) => req.session.save((err) => (err ? fail(err) : ok())));
-      res.json({ user: rows[0] });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Server xatoligi, qaytadan urinib ko‘ring' });
-    }
-  });
+const authLimit = rateLimit({ windowMs: 15 * 60000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false,
+  message: { error: 'Juda ko‘p urinish. 15 daqiqadan keyin qayta urinib ko‘ring.' } });
+
+async function startSession(req, userId) {
+  await new Promise((ok, fail) => req.session.regenerate((err) => (err ? fail(err) : ok())));
+  req.session.uid = userId;
+  await new Promise((ok, fail) => req.session.save((err) => (err ? fail(err) : ok())));
+}
+
+app.post('/api/auth/register', authLimit, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim().replace(/\s+/g, ' ');
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    if (name.length < 3 || name.length > 80) bad('Ism-familiya 3–80 belgi bo‘lishi kerak');
+    if (!EMAIL_RE.test(email) || email.length > 160) bad('Email manzil noto‘g‘ri');
+    if (password.length < 6 || password.length > 200) bad('Parol kamida 6 belgi bo‘lishi kerak');
+    if (email === OWNER_EMAIL) bad('Bu email bilan ro‘yxatdan o‘tib bo‘lmaydi');
+    const hash = await hashPassword(password);
+    const { rows } = await pool.query(
+      `INSERT INTO app_users(id, email, name, role, password_hash) VALUES ($1, $2, $3, 'user', $4)
+       ON CONFLICT (email) DO NOTHING RETURNING ${USER_FIELDS}`,
+      ['u' + crypto.randomUUID(), email, name, hash]);
+    if (!rows.length) bad('Bu email bilan allaqachon ro‘yxatdan o‘tilgan. “Kirish” bo‘limidan foydalaning.', 409);
+    await startSession(req, rows[0].id);
+    res.json({ user: rows[0] });
+  } catch (e) {
+    if (!e.status) console.error(e);
+    res.status(e.status || 500).json({ error: e.status ? e.message : 'Server xatoligi' });
+  }
+});
+
+app.post('/api/auth/login', authLimit, async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    const { rows } = await pool.query(`SELECT ${USER_FIELDS}, password_hash FROM app_users WHERE email = $1`, [email]);
+    const ok = await checkPassword(password, rows[0]?.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Email yoki parol noto‘g‘ri' });
+    await pool.query('UPDATE app_users SET last_seen = NOW() WHERE id = $1', [rows[0].id]);
+    const { password_hash, ...user } = rows[0];
+    await startSession(req, user.id);
+    res.json({ user });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server xatoligi' });
+  }
+});
 
 app.post('/api/logout', (req, res) => req.session.destroy(() => {
   res.clearCookie('colba.sid');
@@ -397,6 +432,20 @@ app.post('/api/users/:id/role', requires('owner'), async (req, res, next) => {
     if (!r.rowCount) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
     await pool.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
       [req.user.id, 'userRole', JSON.stringify({ target: req.params.id, role })]);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/users/:id/password', requires('owner'), async (req, res, next) => {
+  try {
+    const password = String(req.body.password || '');
+    if (password.length < 6 || password.length > 200) return res.status(400).json({ error: 'Parol kamida 6 belgi bo‘lishi kerak' });
+    const r = await pool.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2 AND role <> 'owner' RETURNING id`,
+      [await hashPassword(password), req.params.id]);
+    if (!r.rowCount) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
+    await pool.query(`DELETE FROM session WHERE sess ->> 'uid' = $1`, [req.params.id]);
+    await pool.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
+      [req.user.id, 'passwordReset', JSON.stringify({ target: req.params.id })]);
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
