@@ -505,23 +505,57 @@ window.setParticipation = async (id, on) => {
   const t = selectedTour();
   await mutate("participation", { tourId: t.id, teamId: id, on });
 };
-function teamsAdmin() {
-  const pending = data.teams.filter(
-    (t) => !t.approved && t.status !== "rejected",
-  );
-  const accepted = data.teams.filter((t) => t.approved);
-  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Yangi arizalar ro‘yxatidan faqat jamoa nomini tanlaysiz. A’zolar soni yonida ko‘rsatiladi.</p><h3>Tasdiqlash kutilayotgan jamoalar (${pending.length})</h3>${pending.length ? `<div class="row" style="gap:10px;align-items:end"><label style="flex:1">Jamoani tanlang<select class="field" id="pendingTeam"><option value="">— Tanlang —</option>${pending.map((t) => `<option value="${h(t.id)}">${h(t.name)} (${members(t).length} a’zo)</option>`).join("")}</select></label><button class="primary" onclick="approveSelected()">✓ Tasdiqlash</button><button class="pill" onclick="rejectSelected()">Rad etish</button></div>` : '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map((t) => `<div class="row between" style="padding:14px 0;border-bottom:1px solid var(--line)"><div><strong>${h(t.name)}</strong><div class="notice">${members(t).length} a’zo</div></div>${isOwner() ? `<button class="pill" onclick="editTeam('${t.id}')">Tahrirlash</button>` : ""}</div>`).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}</div>`;
-}
-window.approveSelected = async () => {
-  const id = $("pendingTeam")?.value;
-  if (!id) return alert("Jamoani tanlang");
-  await mutate("approveTeam", { teamId: id });
+const openTeams = new Set();
+window.toggleAdminTeam = (id) => {
+  openTeams.has(id) ? openTeams.delete(id) : openTeams.add(id);
+  draw();
 };
-window.rejectSelected = async () => {
-  const id = $("pendingTeam")?.value;
-  if (!id) return alert("Jamoani tanlang");
-  if (confirm("Jamoa arizasini rad etasizmi?"))
-    await mutate("rejectTeam", { teamId: id });
+function adminTeamCard(t) {
+  const open = openTeams.has(t.id);
+  const pending = t.status === "pending";
+  const rejected = t.status === "rejected";
+  const status = pending
+    ? '<span class="tag" style="background:#fff4dc;color:#9a6a00">Kutilmoqda</span>'
+    : rejected
+      ? '<span class="tag" style="background:#fdecee;color:var(--red)">Rad etilgan</span>'
+      : '<span class="tag">Tasdiqlangan</span>';
+  const who = t.createdByName
+    ? `${h(t.createdByName)}${t.createdByEmail ? " · " + h(t.createdByEmail) : ""}`
+    : "—";
+  const when = t.created ? new Date(t.created).toLocaleString("uz-UZ") : "—";
+  const actions = pending
+    ? `<button class="primary" onclick="approveTeam('${t.id}')">✓ Tasdiqlash</button><button class="pill" onclick="rejectTeam('${t.id}')">Rad etish</button>`
+    : `${isOwner() && t.approved ? `<button class="pill" onclick="editTeam('${t.id}')">Nomini tahrirlash</button>` : ""}<button class="smallbtn danger" onclick="deleteTeam('${t.id}')">O‘chirish</button>`;
+  return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer" onclick="toggleAdminTeam('${t.id}')"><div><strong>${h(t.name)}</strong> ${status}<div class="notice">${members(t).length} a’zo</div></div><span class="muted">${open ? "▴ Yopish" : "▾ Ochish"}</span></div>${
+    open
+      ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><ol class="memberlist" style="margin-top:0">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol><p class="notice" style="margin:10px 0">Ariza yubordi: ${who}<br>Sana: ${h(when)}</p><div class="row" style="gap:8px">${actions}</div></div>`
+      : ""
+  }</div>`;
+}
+function teamsAdmin() {
+  const pending = data.teams.filter((t) => t.status === "pending");
+  const accepted = data.teams.filter((t) => t.approved);
+  const rejected = data.teams.filter((t) => t.status === "rejected");
+  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Jamoa nomini bosib, tarkibini oching. Arizani tasdiqlang yoki rad eting; tasdiqlangan jamoani o‘chirish ham mumkin.</p><div class="sectionTitle"><h2>Tasdiqlash kutilayotgan arizalar (${pending.length})</h2></div>${pending.map(adminTeamCard).join("") || '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map(adminTeamCard).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}${rejected.length ? `<div class="sectionTitle"><h2>Rad etilgan arizalar (${rejected.length})</h2></div>${rejected.map(adminTeamCard).join("")}` : ""}</div>`;
+}
+window.approveTeam = async (id) => {
+  if (await mutate("approveTeam", { teamId: id })) flash("Jamoa tasdiqlandi");
+};
+window.rejectTeam = async (id) => {
+  if (confirm(`“${team(id)?.name}” arizasini rad etasizmi?`))
+    if (await mutate("rejectTeam", { teamId: id })) flash("Ariza rad etildi");
+};
+window.deleteTeam = async (id) => {
+  const t = team(id);
+  if (
+    confirm(
+      `“${t?.name}” jamoasini butunlay o‘chirasizmi? Jamoa e’lon qilinmagan turlardagi javoblari va apellyatsiyalari bilan birga o‘chadi.`,
+    ) &&
+    (await mutate("deleteTeam", { teamId: id }))
+  ) {
+    openTeams.delete(id);
+    flash("Jamoa o‘chirildi");
+  }
 };
 window.editTeam = async (id) => {
   const t = team(id);

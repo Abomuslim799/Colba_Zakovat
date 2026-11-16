@@ -296,7 +296,8 @@ app.post('/api/team', requires('user'), (req, res) => {
     if (similar(name, s.teams)) bad('O‘xshash nom, iltimos boshqa nom tanlang.');
     s.teams.push({
       id: 't' + crypto.randomUUID(), name, members: members.map((x) => x.trim()),
-      status: 'pending', approved: false, createdBy: req.user.id, created: Date.now(),
+      status: 'pending', approved: false, created: Date.now(),
+      createdBy: req.user.id, createdByName: req.user.name, createdByEmail: req.user.email,
     });
     return 'Ariza yuborildi. Jamoa admin tasdiqlagach ro‘yxatda ko‘rinadi.';
   });
@@ -323,6 +324,19 @@ app.post('/api/action', requires('staff'), (req, res) => {
         if (!tm || tm.status !== 'pending') bad('Jamoani rad etish mumkin emas');
         tm.status = 'rejected';
         return 'Ariza rad etildi';
+      case 'deleteTeam': {
+        if (!tm) bad('Jamoa topilmadi');
+        const played = s.tours.filter((x) => x.published && (x.activeTeams || []).includes(tm.id));
+        if (played.length)
+          bad(`Jamoa e’lon qilingan turda qatnashgan (${played.map((x) => x.title).join(', ')}). Avval sayt egasi bu turni qayta ochishi kerak.`);
+        for (const x of s.tours) {
+          x.activeTeams = (x.activeTeams || []).filter((id) => id !== tm.id);
+          if (x.responses) delete x.responses[tm.id];
+        }
+        s.appeals = s.appeals.filter((a) => a.teamId !== tm.id);
+        s.teams = s.teams.filter((x) => x.id !== tm.id);
+        return `“${tm.name}” jamoasi o‘chirildi`;
+      }
       case 'participation':
         if (!t || t.published || !tm?.approved) bad('Jamoa yoki tur noto‘g‘ri');
         t.activeTeams = t.activeTeams.filter((id) => id !== tm.id);
