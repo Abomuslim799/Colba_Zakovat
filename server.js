@@ -277,6 +277,31 @@ app.get('/api/health', async (req, res) => {
 });
 app.get('/api/me', (req, res) => res.json({ user: req.user || null }));
 
+// Kirish sahifasi uchun umumiy raqamlar (shaxsiy ma'lumotsiz)
+let publicStatsCache = { at: 0, data: null };
+app.get('/api/public/stats', async (req, res, next) => {
+  try {
+    if (Date.now() - publicStatsCache.at > 60_000) {
+      const { rows } = await pool.query('SELECT data FROM app_state WHERE id = 1');
+      const s = migrate(rows[0].data);
+      const teams = s.teams.filter((t) => t.approved);
+      const published = s.tours.filter((t) => t.published);
+      let answers = 0;
+      for (const t of published)
+        for (const id of t.activeTeams || []) answers += Object.values((t.responses || {})[id] || {}).filter((v) => v === 1).length;
+      publicStatsCache = {
+        at: Date.now(),
+        data: {
+          league: s.league, teams: teams.length,
+          branches: new Set(teams.map((t) => t.branch).filter(Boolean)).size,
+          tours: s.tours.length, published: published.length, answers,
+        },
+      };
+    }
+    res.json(publicStatsCache.data);
+  } catch (e) { next(e); }
+});
+
 const authLimit = rateLimit({ windowMs: 15 * 60000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false,
   message: { error: 'Juda ko‘p urinish. 15 daqiqadan keyin qayta urinib ko‘ring.' } });
 
