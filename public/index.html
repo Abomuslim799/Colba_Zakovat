@@ -449,7 +449,10 @@ function appealsPage() {
   if (!data.appealEnabled)
     return '<div class="empty">Apellyatsiya bo‘limi hozircha faol emas.</div>';
   const myTeam = myTeams().find((t) => t.approved);
-  const tours = listTours().filter((t) => !t.published && t.myTeamPlays);
+  // Oddiy foydalanuvchiga server "myTeamPlays" beradi; admin/ega to'liq ma'lumotni oladi
+  const tours = listTours().filter(
+    (t) => !t.published && myTeam && (t.myTeamPlays || (t.activeTeams || []).includes(myTeam.id)),
+  );
   const limit = data.appealWordLimit;
   const mine = data.appeals.slice().sort((a, b) => (b.created || 0) - (a.created || 0));
   let form;
