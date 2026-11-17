@@ -153,6 +153,7 @@ body.is-auth #app.shell{max-width:none;padding:0}
 .za-submit:active,.zh-task:active{transform:scale(.98)}
 @media (prefers-reduced-motion:reduce){.zb-c.on,.za-title,.za-lede,.za-stage .zb,.za-form,.zh-seg.next,.zh-rank.grow .zh-rank-bar i{animation:none!important}}
 
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -267,19 +268,30 @@ body.is-auth .tabbar{display:none!important}
 .inventory{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:18px 10px;justify-items:center}
 .medal{display:grid;place-items:center;border:0;background:transparent;padding:10px;border-radius:50%;cursor:zoom-in;transition:transform .25s ease-out;animation:medalIn .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 45ms)}
 @keyframes medalIn{from{opacity:0;transform:translateY(10px) scale(.92)}}
-.medal-art{--s:70px;position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%}
-.medal-art.sm{--s:40px}.medal-art.lg{--s:min(66vw,260px)}.medal-art.xs{--s:16px}
-.medal-disc{position:relative;display:grid;place-items:center;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;box-shadow:inset 0 calc(var(--s) * .02) calc(var(--s) * .03) rgba(255,255,255,.35),inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.28),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(14,40,30,.22)}
-.medal-art.xs .medal-disc{box-shadow:inset 0 -2px 3px rgba(0,0,0,.25)}
-.medal-ring{position:absolute;inset:12%;border-radius:50%;border:max(1px,calc(var(--s) * .01)) solid rgba(255,255,255,.22)}
-.medal-art.xs .medal-ring{display:none}
-.medal-disc.bronza{background:radial-gradient(circle at 34% 28%,#d9a67c,#a8653a 50%,#6e3a1b 92%)}
 /* Afsonaviy: to'q qizil (bordo), xira oltin hoshiya */
-.medal-disc.afsonaviy{background:radial-gradient(circle at 34% 28%,#8f2333,#5c0d1d 50%,#2b030b 94%);box-shadow:inset 0 0 0 calc(var(--s) * .04) #9c7a3c,inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.35),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(40,5,10,.3)}
-.medal-disc.afsonaviy .medal-ring{border-color:rgba(200,160,90,.35)}
 /* Takrorlanmas: to'q binafsha, sokin */
-.medal-disc.takrorlanmas{background:radial-gradient(circle at 34% 28%,#7b52c7,#4a2496 50%,#1c0c45 94%);box-shadow:inset 0 0 0 calc(var(--s) * .04) rgba(210,190,255,.28),inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.35),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(25,10,60,.3)}
-.medal-disc.takrorlanmas .medal-ring{border-color:rgba(220,205,255,.3)}
+.medal-art{--s:76px;position:relative;display:inline-grid;place-items:center;flex:none;width:var(--s);height:var(--s);filter:drop-shadow(0 calc(var(--s) * .05) calc(var(--s) * .07) rgba(20,30,25,.28))}
+.medal-art svg{width:100%;height:100%;display:block;overflow:visible}
+.medal-art.sm{--s:44px}.medal-art.lg{--s:min(70vw,280px)}.medal-art.xs{--s:18px}
+.medal-art.aleksandrit{filter:drop-shadow(0 calc(var(--s) * .06) calc(var(--s) * .08) rgba(40,10,40,.35))}
+.medal-art.aleksandrit svg{transform:scale(.86)}
+.gem-night{opacity:var(--night,0);transition:opacity .35s ease-out}
+.mview .gem-night{animation:alexShift 6s ease-in-out infinite alternate}
+@keyframes alexShift{0%,15%{opacity:0}85%,100%{opacity:1}}
+.mview-back.olmos{background:radial-gradient(circle at 32% 26%,#fffbea,#f3e3b0 60%,#d6b864)}
+.mview-back.yoqut{background:radial-gradient(circle at 32% 26%,#ffffff,#e6e9ee 60%,#b9c0c8)}
+.mview-back.zumrad{background:radial-gradient(circle at 32% 26%,#fff3e8,#efd1b6 60%,#c99a72)}
+.mview-back.aleksandrit{background:radial-gradient(circle at 32% 26%,#f4fbf8,#dcefe8 55%,#d9b9cf)}
+.mview-back em{font-style:normal;font-size:12px;color:#55675e;margin-top:4px}
+.qcell.aleksandrit{background:linear-gradient(135deg,#1f8a6b 0 50%,#9c2f74 50% 100%);color:#fff}
+.mguide-wrap{margin-top:14px;border-top:1px solid rgba(14,59,44,.08);padding-top:10px}
+.mguide-wrap summary{cursor:pointer;font:700 14px/1.3 var(--display);color:var(--baize);padding:6px 0}
+.mguide{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;margin:10px 0}
+.mguide-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.mguide-item strong{display:block;font:700 15px/1.2 var(--display)}
+.mguide-item span{display:block;font-size:12px;color:#6b7d74;margin:2px 0 4px}
+.mguide-item p{margin:0;font-size:13px;line-height:1.45;color:#3d4d45}
+@media (prefers-reduced-motion:reduce){.mview .gem-night{animation:none;opacity:.5}}
 .medal-legend{display:flex;flex-wrap:wrap;gap:10px 14px;font-size:13px;color:#4d6258}
 .medal-legend span{display:inline-flex;align-items:center;gap:7px}
 
@@ -292,10 +304,7 @@ body.is-auth .tabbar{display:none!important}
 .mview-3d{--rx:0deg;--ry:0deg;position:relative;display:grid;transform-style:preserve-3d;transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .2s ease-out;animation:mviewIn .5s cubic-bezier(.2,.8,.2,1)}
 @keyframes mviewIn{from{transform:scale(.6) rotateY(-30deg);opacity:0}}
 .mview-front,.mview-back{grid-area:1/1;-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
-.mview-back{transform:rotateY(180deg);align-self:center;justify-self:center;width:min(66vw,260px);height:min(66vw,260px);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:12%;color:var(--ink);background:radial-gradient(circle at 32% 26%,#ffffff,#e9efeb 60%,#c9d5ce);box-shadow:inset 0 0 0 6px rgba(255,255,255,.6),0 20px 40px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
-.mview-back.afsonaviy{background:radial-gradient(circle at 32% 26%,#fbf3f3,#ead3d6 60%,#c99aa1)}
-.mview-back.takrorlanmas{background:radial-gradient(circle at 32% 26%,#f8f5fd,#e2d9f3 60%,#b8a6dc)}
-.mview-back.bronza{background:radial-gradient(circle at 32% 26%,#fff3e8,#efd1b6 60%,#c99a72)}
+.mview-back{transform:rotateY(180deg);align-self:center;justify-self:center;width:min(70vw,280px);height:min(70vw,280px);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:12%;color:var(--ink);background:radial-gradient(circle at 32% 26%,#ffffff,#e9efeb 60%,#c9d5ce);box-shadow:inset 0 0 0 6px rgba(255,255,255,.6),0 20px 40px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
 .mview-tier{font:800 18px/1 var(--display);color:var(--baize)}
 .mview-back strong{font:700 15px/1.2 var(--display)}
 .mview-back small{font-size:12px;color:#55675e}
@@ -314,13 +323,9 @@ body.is-auth .tabbar{display:none!important}
 .qcell{aspect-ratio:1;border-radius:7px;display:grid;place-items:center;font:600 10px/1 var(--text);color:#7b8b83;background:rgba(255,255,255,.7);box-shadow:inset 0 -3px 0 rgba(14,59,44,calc(.08 + var(--p) * .3))}
 .qcell b{font-weight:600}
 .qcell.zero{background:repeating-linear-gradient(135deg,rgba(14,59,44,.05) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 1px rgba(14,59,44,.14);color:#9aa8a1}
-.qcell.bronza{background:linear-gradient(160deg,#c98e63,#8a4d26);color:#fbeee4}
-.qcell.afsonaviy{background:linear-gradient(160deg,#7d1a2b,#3d0611);color:#f3dfe2}
-.qcell.takrorlanmas{background:linear-gradient(160deg,#6a44b8,#24104f);color:#ece6fb}
 .qcols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
 .qchips{display:flex;flex-wrap:wrap;gap:6px}
 .qchip{min-width:34px;text-align:center;padding:7px 8px;border-radius:10px;font:700 13px/1 var(--display);background:rgba(14,59,44,.06);color:var(--baize)}
-.qchip.bronza{background:linear-gradient(160deg,#f1c9a3,#c98149);color:#4a250c}
 .rare{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 0;border-top:1px solid rgba(14,59,44,.08)}
 .rare:first-of-type{border-top:0}
 .rare-teams{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px}
@@ -732,19 +737,17 @@ function summary(skipId) {
   });
 }
 // ---------- Medallar ----------
-// Savolni topgan jamoalar soni (s) va turda qatnashganlar (n) bo'yicha:
-// 1 jamoa — Takrorlanmas; 2 jamoa — Afsonaviy; hamma topgan — Bronza.
+// Tur o'rinlari: 1 — Olmos (oltin gerb), 2 — Yoqut (kumush), 3 — Zumrad (bronza).
+// Savol: faqat bitta jamoa topgan bo'lsa — Aleksandrit (gerbsiz, toshning o'zi). Boshqa savollarga medal yo'q.
 const MEDALS = {
-  takrorlanmas: { name: "Takrorlanmas", rank: 5, note: "savolni faqat bitta jamoa topgan" },
-  afsonaviy: { name: "Afsonaviy", rank: 4, note: "savolni faqat ikki jamoa topgan" },
-  bronza: { name: "Bronza", rank: 1, note: "savolni hamma jamoa topgan" },
+  aleksandrit: { name: "Aleksandrit", rank: 4, metal: null, what: "Yagona javob", meaning: "Kunduzi yashil, chiroq nurida qizil-binafsha bo‘lib ko‘rinadigan nodir tosh. Savolni turda faqat bitta jamoa topdi: hamma bir xil ko‘rgan narsani u boshqa nurda ko‘rdi." },
+  olmos: { name: "Olmos", rank: 3, metal: "oltin", place: 1, what: "Turda 1-o‘rin", meaning: "Eng qattiq tosh: olmosni faqat olmos kesa oladi. Eng kuchli fikrni ham faqat kuchliroq fikr yengadi." },
+  yoqut: { name: "Yoqut", rank: 2, metal: "kumush", place: 2, what: "Turda 2-o‘rin", meaning: "Qattiqlikda olmosdan keyingi tosh. G‘alabaga bir qadam qolgan jamoa." },
+  zumrad: { name: "Zumrad", rank: 1, metal: "bronza", place: 3, what: "Turda 3-o‘rin", meaning: "O‘sish va tiriklik rangi. Shohsupaga chiqildi, yo‘l yuqoriga davom etadi." },
 };
+const PLACE_TIER = { 1: "olmos", 2: "yoqut", 3: "zumrad" };
 function medalTier(s, n) {
-  if (!s || !n) return null;
-  if (s === n) return "bronza";
-  if (s === 1) return "takrorlanmas";
-  if (s === 2) return "afsonaviy";
-  return null;
+  return s === 1 && n > 1 ? "aleksandrit" : null;
 }
 function questionStats(t) {
   const a = active(t),
@@ -754,37 +757,120 @@ function questionStats(t) {
     return { q, n, solvers, tier: medalTier(solvers.length, n) };
   });
 }
-// Jamoa inventari: takrorlanmas/afsonaviy — har biri alohida; bronza — tur bo'yicha bitta medalga yig'iladi
 function teamMedals(teamId) {
   const out = [];
   for (const t of listTours()) {
     if (!t.published || !(t.activeTeams || []).includes(teamId)) continue;
-    const grouped = {};
-    for (const x of questionStats(t)) {
-      if (!x.tier || !x.solvers.some((tm) => tm.id === teamId)) continue;
-      if (MEDALS[x.tier].rank >= 3) out.push({ tier: x.tier, tour: t, qs: [x.q + 1], s: x.solvers.length, n: x.n });
-      else (grouped[x.tier] ??= { tier: x.tier, tour: t, qs: [], s: x.solvers.length, n: x.n }).qs.push(x.q + 1);
-    }
-    out.push(...Object.values(grouped));
+    const r = calculate(t).find((x) => x.id === teamId),
+      n = active(t).length;
+    if (r && n > 1 && PLACE_TIER[r.pos]) out.push({ tier: PLACE_TIER[r.pos], tour: t, place: r.pos, n });
+    for (const x of questionStats(t)) if (x.tier && x.solvers[0].id === teamId) out.push({ tier: x.tier, tour: t, q: x.q + 1, n });
   }
-  return out.sort((a, b) => MEDALS[b.tier].rank - MEDALS[a.tier].rank || a.tour.id - b.tour.id || a.qs[0] - b.qs[0]);
+  return out.sort((a, b) => MEDALS[b.tier].rank - MEDALS[a.tier].rank || a.tour.id - b.tour.id || (a.q || 0) - (b.q || 0));
 }
-// Dumaloq medal: yozuvsiz va naqshsiz, minimal. Nima uchun berilgani faqat orqa tomonda.
+// --- SVG chizish: yozuv va rasm yo'q, faqat metall, dafna va qirrali tosh
+const MED_METAL = {
+  oltin: ["#fff3b8", "#e2b54a", "#9a6b12", "#5e3f06"],
+  kumush: ["#ffffff", "#c9cfd6", "#7c8691", "#454c55"],
+  bronza: ["#f6d1a8", "#c0803f", "#7c4a1e", "#45260c"],
+};
+const MED_GEM = {
+  olmos: [["#ffffff", "#d9ecf7", "#8fb3c9", "#4f6f85"]],
+  yoqut: [["#ff8a9a", "#d4173a", "#8a0a22", "#46020f"]],
+  zumrad: [["#8ff0c0", "#17a165", "#0a6a3f", "#03341e"]],
+  aleksandrit: [["#9fe8c8", "#1f8a6b", "#0e5843", "#05281e"], ["#f2a6cf", "#9c2f74", "#5e1446", "#2c0620"]],
+  aleksandritTun: [["#f6b3d6", "#a3367c", "#64164b", "#2c0620"], ["#e48fc0", "#86275f", "#4f103a", "#22041a"]],
+};
+let medUid = 0;
+const mHex = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+const mMix = (a, b, t) => { const A = mHex(a), B = mHex(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",") + ")"; };
+function mShade(p, t) {
+  t = Math.max(0, Math.min(1, t));
+  if (t < 0.33) return mMix(p[3], p[2], t / 0.33);
+  if (t < 0.7) return mMix(p[2], p[1], (t - 0.33) / 0.37);
+  return mMix(p[1], p[0], (t - 0.7) / 0.3);
+}
+const mPt = (r, a) => (100 + r * Math.cos(a)).toFixed(2) + "," + (100 + r * Math.sin(a)).toFixed(2);
+const mLight = (a) => 0.5 + 0.5 * Math.cos(a + (Math.PI * 3) / 4);
+function gemSVG(pals, R, uid) {
+  const out = [],
+    r = R * 0.56,
+    O = (i) => (i * Math.PI) / 4 - Math.PI / 2,
+    T = (i) => O(i) + Math.PI / 8;
+  for (let i = 0; i < 8; i++) {
+    const p = pals[i % pals.length],
+      a = O(i), b = O(i + 1), t = T(i), m = (a + b) / 2;
+    out.push(`<polygon points="${mPt(R, a)} ${mPt(r, t)} ${mPt(R, m)}" fill="${mShade(p, mLight(a + 0.2) * 0.85)}"/>`);
+    out.push(`<polygon points="${mPt(R, m)} ${mPt(r, t)} ${mPt(R, b)}" fill="${mShade(p, mLight(b - 0.2) * 0.75 + 0.05)}"/>`);
+    out.push(`<polygon points="${mPt(r, T(i - 1))} ${mPt(R, a)} ${mPt(r, t)}" fill="${mShade(p, mLight(a) * 0.7 + 0.2)}"/>`);
+  }
+  const p0 = pals[0], p1 = pals[1] || p0;
+  out.push(`<polygon points="${[...Array(8)].map((_, i) => mPt(r, T(i))).join(" ")}" fill="url(#tb${uid})"/>`);
+  out.push(`<polygon points="${[...Array(16)].map((_, i) => mPt(R, O(i / 2))).join(" ")}" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="${(R / 40).toFixed(2)}"/>`);
+  out.push(`<path d="M${mPt(r * 0.9, -Math.PI * 0.8)} L${mPt(r * 0.45, -Math.PI * 0.62)}" stroke="#fff" stroke-width="${(R / 14).toFixed(2)}" stroke-linecap="round" opacity=".8"/>`);
+  return { defs: `<linearGradient id="tb${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p0[0]}"/><stop offset=".55" stop-color="${p0[1]}"/><stop offset="1" stop-color="${p1[2]}"/></linearGradient>`, body: out.join("") };
+}
+function wreathSVG(p) {
+  const out = [];
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < 9; k++) {
+      const ang = Math.PI / 2 + side * (0.4 + k * 0.255);
+      for (const off of [-1, 1]) {
+        const rr = 67 + off * 7,
+          x = 100 + rr * Math.cos(ang), y = 100 + rr * Math.sin(ang),
+          rot = ((ang - (side * Math.PI) / 2 - off * side * 0.5) * 180) / Math.PI;
+        out.push(`<path transform="translate(${x.toFixed(2)},${y.toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${(1.45 - k * 0.05).toFixed(2)})" d="M0,0 Q7,-4.6 15,0 Q7,4.6 0,0Z" fill="${mShade(p, mLight(ang) * 0.55 + (off > 0 ? 0.1 : 0.3))}" stroke="${p[3]}" stroke-opacity=".35" stroke-width=".5"/>`);
+      }
+    }
+  }
+  return out.join("");
+}
+function medalSVG(tier) {
+  const uid = "m" + ++medUid;
+  if (tier === "aleksandrit") {
+    const day = gemSVG(MED_GEM.aleksandrit, 88, uid + "d"),
+      night = gemSVG(MED_GEM.aleksandritTun, 88, uid + "n");
+    return `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${day.defs}${night.defs}</defs><g>${day.body}</g><g class="gem-night">${night.body}</g></svg>`;
+  }
+  const p = MED_METAL[MEDALS[tier].metal],
+    g = gemSVG(MED_GEM[tier], 36, uid),
+    ring = [...Array(8)].map((_, i) => { const [x, y] = mPt(43.5, (i * Math.PI) / 4 - Math.PI / 2).split(","); return `<circle cx="${x}" cy="${y}" r="2.2" fill="${p[0]}" stroke="${p[3]}" stroke-width=".5"/>`; }).join("");
+  return `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>
+<radialGradient id="rim${uid}" cx=".32" cy=".25" r=".95"><stop offset="0" stop-color="${p[0]}"/><stop offset=".45" stop-color="${p[1]}"/><stop offset="1" stop-color="${p[3]}"/></radialGradient>
+<radialGradient id="fld${uid}" cx=".65" cy=".75" r=".9"><stop offset="0" stop-color="${p[0]}"/><stop offset=".5" stop-color="${p[1]}"/><stop offset="1" stop-color="${p[2]}"/></radialGradient>
+<radialGradient id="seat${uid}" cx=".5" cy=".5" r=".5"><stop offset=".7" stop-color="${p[3]}" stop-opacity=".55"/><stop offset="1" stop-color="${p[3]}" stop-opacity="0"/></radialGradient>${g.defs}</defs>
+<circle cx="100" cy="100" r="96" fill="url(#rim${uid})"/><circle cx="100" cy="100" r="86" fill="url(#fld${uid})" stroke="${p[3]}" stroke-opacity=".45" stroke-width="1.2"/><circle cx="100" cy="100" r="83" fill="none" stroke="${p[0]}" stroke-opacity=".5" stroke-width=".8"/>
+${wreathSVG(p)}<circle cx="100" cy="100" r="50" fill="url(#seat${uid})"/><circle cx="100" cy="100" r="42" fill="none" stroke="url(#rim${uid})" stroke-width="5"/>${ring}${g.body}</svg>`;
+}
+const medalSvgCache = {};
 function medalFace(m, size = "") {
-  return `<span class="medal-art ${m.tier}${size}"><span class="medal-disc ${m.tier}"><span class="medal-ring"></span></span></span>`;
+  // SVG har bir tur uchun bir marta yasaladi (gradientlar bir xil, id takrorlansa ham ko'rinish o'zgarmaydi)
+  const svg = (medalSvgCache[m.tier] ??= medalSVG(m.tier));
+  return `<span class="medal-art ${m.tier}${size}">${svg}</span>`;
 }
-const medalQText = (m) => (m.qs.length > 1 ? `${m.qs.join(", ")}-savollar` : `${m.qs[0]}-savol`);
-const medalWho = (m) => (m.s === 1 ? "Faqat shu jamoa topgan" : m.s === m.n ? `Turdagi barcha ${m.n} jamoa topgan` : `${m.n} jamoadan ${m.s} tasi topgan`);
+const medalBack = (m) =>
+  m.q
+    ? `<strong>${h(m.tour.title)}</strong><span>${m.q}-savol</span><small>${m.n} jamoadan faqat shu jamoa topgan</small>`
+    : `<strong>${h(m.tour.title)}</strong><span>${m.place}-o‘rin</span><small>${m.n} jamoa ichida</small>`;
+const medalLabel = (m) => `${MEDALS[m.tier].name} medal, ${h(m.tour.title)}, ${m.q ? m.q + "-savol" : m.place + "-o‘rin"}`;
 function medalCard(m, i) {
-  return `<button class="medal" style="--i:${i}" onclick="openMedal(${i})" onpointermove="medalTilt(event,this)" onpointerleave="medalTilt(null,this)" aria-label="${MEDALS[m.tier].name} medal, ${h(m.tour.title)}, ${medalQText(m)}. Kattalashtirish uchun bosing">${medalFace(m)}</button>`;
+  return `<button class="medal" style="--i:${i}" onclick="openMedal(${i})" onpointermove="medalTilt(event,this)" onpointerleave="medalTilt(null,this)" aria-label="${medalLabel(m)}. Kattalashtirish uchun bosing">${medalFace(m)}</button>`;
 }
 window.medalTilt = (e, el) => {
-  if (!e || reduceMotion() || e.pointerType === "touch") return (el.style.transform = "");
+  if (!e || reduceMotion() || e.pointerType === "touch") return (el.style.transform = ""), el.style.removeProperty("--night");
   const r = el.getBoundingClientRect(),
     x = (e.clientX - r.left) / r.width - 0.5,
     y = (e.clientY - r.top) / r.height - 0.5;
   el.style.transform = `perspective(700px) rotateY(${x * 16}deg) rotateX(${-y * 16}deg)`;
+  el.style.setProperty("--night", Math.min(1, Math.abs(x) * 2.2).toFixed(2));
 };
+// Medallar ma'nosi — foydalanuvchi ramzni o'zi topishga majbur bo'lmasin
+function medalGuide() {
+  return `<div class="mguide">${["olmos", "yoqut", "zumrad", "aleksandrit"]
+    .map((k) => `<div class="mguide-item">${medalFace({ tier: k }, " sm")}<div><strong>${MEDALS[k].name}</strong><span>${MEDALS[k].what}</span><p>${MEDALS[k].meaning}</p></div></div>`)
+    .join("")}</div><p class="notice">O‘rin medallari har bir e’lon qilingan turda 1, 2 va 3-o‘rin uchun beriladi (o‘rin teng bo‘lsa, ikkala jamoaga ham). Aleksandrit faqat turda bitta jamoa topgan savol uchun beriladi; boshqa savollarga medal berilmaydi. Aleksandrit medalini bosib kattalashtirsangiz, tosh asta rangini o‘zgartiradi: yashildan qizil-binafshaga.</p>`;
+}
+
 // Kattalashtirilgan ko'rinish: og'dirish, ag'darish, oldingi/keyingi medal
 let viewMedals = [],
   viewIndex = 0;
@@ -797,7 +883,7 @@ window.openMedal = (i) => {
 <button class="mview-close" onclick="closeSheet()" aria-label="Yopish">×</button>
 <div class="mview-stage" id="mviewStage" onclick="this.classList.toggle('flip')" onpointermove="mviewTilt(event)" onpointerleave="mviewTilt(null)">
   <div class="mview-3d" id="mview3d"><div class="mview-front">${medalFace(m, " lg")}</div>
-  <div class="mview-back ${m.tier}"><span class="mview-tier">${MEDALS[m.tier].name}</span><strong>${h(m.tour.title)}</strong><span>${medalQText(m)}</span><small>${medalWho(m)}</small>${m.qs.length > 1 ? `<small>${m.qs.length} ta medal</small>` : ""}</div></div>
+  <div class="mview-back ${m.tier}"><span class="mview-tier">${MEDALS[m.tier].name}</span>${medalBack(m)}<em>${MEDALS[m.tier].what}</em></div></div>
 </div>
 <div class="mview-nav">${viewMedals.length > 1 ? `<button class="pill" onclick="openMedal(${viewIndex - 1})" aria-label="Oldingi medal">‹</button>` : ""}<button class="pill" onclick="$('mviewStage').classList.toggle('flip')">Ag‘darish</button>${viewMedals.length > 1 ? `<button class="pill" onclick="openMedal(${viewIndex + 1})" aria-label="Keyingi medal">›</button>` : ""}</div>
 </div>`;
@@ -834,27 +920,27 @@ function questionsPage() {
     n = qs[0].n;
   const all = qs.filter((x) => x.solvers.length === n),
     none = qs.filter((x) => !x.solvers.length),
-    rare = qs.filter((x) => x.solvers.length && x.solvers.length < n && MEDALS[x.tier]?.rank >= 3);
-  const chip = (x) => `<span class="qchip ${x.tier || ""}" title="${x.solvers.length} / ${n}">${x.q + 1}</span>`;
+    rare = qs.filter((x) => x.tier);
+  const chip = (x) => `<span class="qchip" title="${x.solvers.length} / ${n}">${x.q + 1}</span>`;
   const strip = qs
-    .map((x) => `<span class="qcell ${x.tier || (x.solvers.length ? "plain" : "zero")}" style="--p:${x.solvers.length / n}" title="${x.q + 1}-savol: ${x.solvers.length} / ${n}${x.tier ? " · " + MEDALS[x.tier].name : ""}"><b>${x.q + 1}</b></span>`)
+    .map((x) => `<span class="qcell ${x.tier || (x.solvers.length ? "plain" : "zero")}" style="--p:${x.solvers.length / n}" title="${x.q + 1}-savol: ${x.solvers.length} / ${n}${x.tier ? " · Aleksandrit" : ""}"><b>${x.q + 1}</b></span>`)
     .join("");
-  return `<div class="pagehead"><h1>Savollar xaritasi</h1><p>Har bir savolni nechta jamoa topgani va shu asosda berilgan medallar. Kam jamoa topgan savol — qimmatroq medal.</p></div>
+  return `<div class="pagehead"><h1>Savollar xaritasi</h1><p>Har bir savolni nechta jamoa topgani. Faqat bitta jamoa topgan savol uchun shu jamoa Aleksandrit medal oladi.</p></div>
 <div class="tabstrip qtabs">${pub.map((x) => `<button class="tabchip ${x.id === t.id ? "active" : ""}" onclick="go('questions', ${x.id})">${h(x.title)}</button>`).join("")}</div>
-<section class="glass pad"><div class="row between" style="gap:12px;flex-wrap:wrap"><h2 class="h2">${h(t.title)}: 36 savol, ${n} jamoa</h2><div class="medal-legend">${Object.entries(MEDALS).map(([k, m]) => `<span title="${m.note}">${medalFace({ tier: k, qs: [""] }, " xs")}${m.name}</span>`).join("")}</div></div><div class="qstrip">${strip}</div><p class="notice">Rangli katak — medal berilgan savol. Oq katak — ko‘pchilik topgan (pastki chiziq qancha qalin bo‘lsa, shuncha ko‘p), shtrixli — hech kim topmagan.</p></section>
+<section class="glass pad"><h2 class="h2">${h(t.title)}: 36 savol, ${n} jamoa</h2><div class="qstrip">${strip}</div><p class="notice">Yashil-binafsha katak — faqat bitta jamoa topgan savol (Aleksandrit). Oq katak — topilgan savol (pastki chiziq qancha qalin bo‘lsa, shuncha ko‘p jamoa topgan), shtrixli — hech kim topmagan.</p></section>
 <div class="qcols">
-<section class="glass pad"><h2 class="h2">Kam topilgan savollar <span class="count">${rare.length}</span></h2><p class="notice">Faqat 1 yoki 2 jamoa topgan savollar: Takrorlanmas va Afsonaviy medallar shular uchun beriladi.</p>${
+<section class="glass pad"><h2 class="h2">Yagona javoblar <span class="count">${rare.length}</span></h2><p class="notice">Turda faqat bitta jamoa topgan savollar.</p>${
     rare.length
       ? rare
-          .sort((a, b) => a.solvers.length - b.solvers.length || a.q - b.q)
-          .map((x) => `<div class="rare"><span class="rare-q">${medalFace({ tier: x.tier, qs: [x.q + 1] }, " sm")}</span><div><strong>${x.q + 1}-savol · ${MEDALS[x.tier].name}</strong><div class="rare-teams">${x.solvers.map((tm) => `<button class="linkbtn" onclick="go('team','${tm.id}')">${h(tm.name)}</button>`).join("")}</div></div><span class="rare-n">${x.solvers.length} / ${n}</span></div>`)
+          .map((x) => `<div class="rare"><span class="rare-q">${medalFace({ tier: x.tier }, " sm")}</span><div><strong>${x.q + 1}-savol</strong><div class="rare-teams">${x.solvers.map((tm) => `<button class="linkbtn" onclick="go('team','${tm.id}')">${h(tm.name)}</button>`).join("")}</div></div><span class="rare-n">1 / ${n}</span></div>`)
           .join("")
       : '<p class="zh-muted">Bu turda bunday savol bo‘lmadi.</p>'
   }</section>
 <div class="qside">
 <section class="glass pad"><h2 class="h2">Hech kim topa olmagan <span class="count">${none.length}</span></h2>${none.length ? `<div class="qchips">${none.map(chip).join("")}</div>` : '<p class="zh-muted">Har bir savolni kamida bitta jamoa topgan.</p>'}</section>
-<section class="glass pad"><h2 class="h2">Hamma topgan <span class="count">${all.length}</span></h2>${all.length ? `<div class="qchips">${all.map(chip).join("")}</div><p class="notice">Bu savollar uchun har bir jamoa bronza medal oladi.</p>` : '<p class="zh-muted">Bunday savol bo‘lmadi.</p>'}</section>
-</div></div>`;
+<section class="glass pad"><h2 class="h2">Hamma topgan <span class="count">${all.length}</span></h2>${all.length ? `<div class="qchips">${all.map(chip).join("")}</div>` : '<p class="zh-muted">Bunday savol bo‘lmadi.</p>'}</section>
+</div></div>
+<section class="glass pad"><h2 class="h2">Medallar ma’nosi</h2>${medalGuide()}</section>`;
 }
 
 // ---------- Jamoa profili ----------
@@ -989,7 +1075,7 @@ function teamProfilePage() {
     mine = t.mine || t.createdBy === currentUser?.id;
   const total = hist.reduce((a, r) => a + r.count, 0),
     best = hist.length ? Math.min(...hist.map((r) => r.pos)) : null;
-  const gem = medals.reduce((m, x) => ((m[x.tier] = (m[x.tier] || 0) + x.qs.length), m), {});
+  const gem = medals.reduce((m, x) => ((m[x.tier] = (m[x.tier] || 0) + 1), m), {});
   const initials = t.name.replace(/[^\p{L}\s]/gu, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const cover = (profilePhotos[t.id]?.list || [])[0];
   const stat = (v, l) => `<div class="pstat"><strong>${v}</strong><span>${l}</span></div>`;
@@ -997,7 +1083,7 @@ function teamProfilePage() {
 <section class="phero">
   <div class="pavatar" id="pavatar">${cover ? `<img src="/api/photos/${cover.id}" alt="">` : `<span>${h(initials || "?")}</span>`}</div>
   <div class="phead"><h1>${h(t.name)}</h1><p>${[t.branch ? h(t.branch) + " filiali" : "", members(t).length + " o‘yinchi", t.status === "closed" ? "faoliyati tugatilgan" : t.status === "pending" ? "tasdiq kutilmoqda" : ""].filter(Boolean).join(" · ")}${mine ? ' <span class="pmine">Sizning jamoangiz</span>' : ""}</p></div>
-  <div class="pstats">${stat(season ? season.rank + "-o‘rin" : "—", "mavsumda")}${stat(season ? season.points : 0, "reyting bali")}${stat(hist.length, "tur o‘ynagan")}${stat(total, "to‘g‘ri javob")}${stat(best ? best + "-o‘rin" : "—", "eng yaxshi natija")}${stat(medals.reduce((a, m) => a + m.qs.length, 0), "medal")}</div>
+  <div class="pstats">${stat(season ? season.rank + "-o‘rin" : "—", "mavsumda")}${stat(season ? season.points : 0, "reyting bali")}${stat(hist.length, "tur o‘ynagan")}${stat(total, "to‘g‘ri javob")}${stat(best ? best + "-o‘rin" : "—", "eng yaxshi natija")}${stat(medals.length, "medal")}</div>
 </section>
 ${msgs()}
 <div class="pgrid">
@@ -1015,8 +1101,8 @@ ${msgs()}
 <section class="glass pad"><div class="row between" style="gap:10px;flex-wrap:wrap"><h2 class="h2">Inventar</h2><span class="notice">${Object.entries(MEDALS).filter(([k]) => gem[k]).map(([k, m]) => `${m.name}: ${gem[k]}`).join(" · ") || ""}</span></div>${
     medals.length
       ? `<p class="notice" style="margin-top:0">Medalni bosing — kattalashib ochiladi. Nima uchun berilganini bilish uchun uni ag‘daring.</p><div class="inventory">${(viewMedals = medals).map(medalCard).join("")}</div>`
-      : '<p class="zh-muted">Hali medal yo‘q. Medallar kam jamoa topgan savollar uchun beriladi.</p>'
-  }</section>
+      : '<p class="zh-muted">Hali medal yo‘q. Medal turda 1–3-o‘rin uchun va faqat shu jamoa topgan savol uchun beriladi.</p>'
+  }<details class="mguide-wrap"><summary>Medallar ma’nosi</summary>${medalGuide()}</details></section>
 <section class="glass pad"><h2 class="h2">Faollik</h2>${activityChart(hist)}${
     hist.length
       ? `<div class="tablewrap"><table class="datatable ptable"><thead><tr><th>Tur</th><th>O‘rin</th><th>To‘g‘ri</th><th>SR</th><th>R1 · R2 · R3</th><th>Ball</th></tr></thead><tbody>${hist

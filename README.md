@@ -71,7 +71,7 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 
 - Har bir jamoaning profili bor (`#/jamoa/<id>`): mavsumdagi o'rni, ball, o'ynagan turlari, to'g'ri javoblar, eng yaxshi natija, faollik grafigi, turlar bo'yicha jadval, tarkib.
 - **Tavsif va suratlar** (8 tagacha, har biri 700 KB gacha; brauzer yuklashdan oldin siqadi) — jamoa sardori yoki admin/ega qo'shadi. Suratlar Postgres'da saqlanadi va faqat tizimga kirganlarga ko'rinadi.
-- **Medallar** — e'lon qilingan turlarda savolni nechta jamoa topganiga qarab: 1 jamoa — **Takrorlanmas** (to'q binafsha), 2 jamoa — **Afsonaviy** (to'q qizil), hamma topgan — **Bronza** (tur bo'yicha bitta medalga yig'iladi). Medallar minimal: yozuv, naqsh va nursiz; bosilsa kattalashadi, nima uchun berilgani orqa tomonida.
+- **Medallar** — e'lon qilingan har bir turda: 1-o'rin — **Olmos** (oltin gerb), 2-o'rin — **Yoqut** (kumush), 3-o'rin — **Zumrad** (bronza); o'rin teng bo'lsa ikkala jamoaga. Savolni turda faqat bitta jamoa topsa — **Aleksandrit** (gerbsiz tosh, og'dirilganda yashildan qizil-binafshaga o'tadi). Boshqa savollarga medal yo'q. Medal ustida yozuv yo'q: bosilsa kattalashadi, orqasida qaysi tur va o'rin/savol uchun berilgani; har bir medalning ma'nosi profil va Savollar xaritasi sahifasida yozilgan.
 - **Savollar xaritasi** (`#/savollar`): har bir tur uchun hamma topgan, hech kim topmagan va kam topilgan savollar, kim topgani va qanday medal olgani.
 - Bosh sahifada reyting oynasi: oxirgi turdagi o'rin o'zgarishi (▲▼) va eng ko'p o'sgan jamoalar.
 
