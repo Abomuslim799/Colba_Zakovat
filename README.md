@@ -67,4 +67,4 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 - Admin amallari `audit_log` jadvalida qayd etiladi.
 
 ---
-G'oya va platforma muallifi: **Adhamjon Zokirjanov**
+G'oya muallifi va platforma yaratuvchisi: **Adhamjon Zokirjanov**

@@ -413,6 +413,12 @@ app.post('/api/action', requires('staff'), (req, res) => {
         t.activeTeams = t.activeTeams.filter((id) => id !== tm.id);
         if (payload.on) t.activeTeams.push(tm.id);
         return 'Tur tarkibi saqlandi';
+      case 'participationAll': {
+        if (!t || t.published) bad('E’lon qilingan tur tarkibini o‘zgartirib bo‘lmaydi');
+        const ids = s.teams.filter((x) => x.approved).map((x) => x.id);
+        t.activeTeams = payload.on ? ids : [];
+        return payload.on ? `Barcha ${ids.length} ta jamoa belgilandi` : 'Barcha belgilar olib tashlandi';
+      }
       case 'flip': {
         const q = Number(payload.q);
         if (!t || t.published || !tm?.approved || !t.activeTeams.includes(tm.id) || !Number.isInteger(q) || q < 0 || q >= QUESTIONS)
