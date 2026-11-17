@@ -40,6 +40,9 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
   - Tasdiq kutilayotgan arizani **qaytarib olish** mumkin.
   - Tasdiqlangan jamoaning **faoliyatini tugatish** mumkin. Jamoa e'lon qilingan turda qatnashgan bo'lsa, u "faoliyati tugatilgan" bo'lib arxivlanadi: natijalari va reytingdagi qatori saqlanadi, yangi turlarga qo'shilmaydi. Qatnashmagan bo'lsa, butunlay o'chadi. Shundan keyin foydalanuvchi yangi jamoa ocha oladi.
   - Admin jamoani o'chirganda ham shu qoida ishlaydi.
+- Ro'yxatdan o'tishda **jamoa filiali** ham kiritiladi; filial jamoa kartalarida ko'rinadi.
+- **Jadvaldan import** (admin/ega, "Boshqaruv → Jamoalar → ⇪ Jadvaldan import"): Google Form javoblari jadvalini sarlavha bilan nusxalab qo'yiladi → "Ko'rib chiqish" → import. Lider sardor qilib birinchi qo'yiladi, a'zolar ro'yxatidagi takrori olib tashlanadi, raqamlash va turkcha harflar (ş, ç, ğ, ö → sh, ch, g‘, o‘) tuzatiladi. Mavjud yoki o'xshash nomli jamoalar o'tkazib yuboriladi, shuning uchun bir jadvalni qayta import qilish xavfsiz. Import qilingan jamoalar tasdiqlangan bo'ladi.
+- **Sardor hisobi:** import qilingan jamoaning sayt hisobi yo'q. Sardor saytda ro'yxatdan o'tgach, admin jamoa kartasida uni "Sardor hisobi" ro'yxatidan biriktiradi — shundan keyin u apellyatsiya bera oladi va "Mening jamoam"ni ko'radi.
 - O'xshash nomlar (raqam qo'shish, `x/h` farqi, mayda imlo farqi) serverda bloklanadi.
 - Admin tasdiqlagan jamoalar turga qo'shiladi, javoblar `+/−` bilan kiritiladi. E'lon qilinmagan tur javoblari faqat admin/egaga ko'rinadi.
 

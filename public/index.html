@@ -154,6 +154,7 @@ const listTours = () => data.tours.slice().sort((a, b) => a.id - b.id),
   wordCount = (text) => String(text || "").trim().split(/\s+/).filter(Boolean).length,
   fmtDate = (v) => (v ? new Date(v).toLocaleString("uz-UZ", { dateStyle: "short", timeStyle: "short" }) : "—"),
   isOwner = () => state.role === "owner",
+  branches = () => [...new Set(data.teams.map((t) => t.branch).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uz")),
   members = (t) => (t?.members || []).filter(Boolean),
   active = (t) => data.teams.filter((x) => t.activeTeams.includes(x.id)),
   roleLabel = () =>
@@ -336,7 +337,7 @@ function teamsPage() {
       ? `<div class="grid2">${list
           .map(
             (t, i) =>
-              `<div class="card teamcard"><div class="teamhead"><div class="teamicon">${i + 1}</div><div class="flex1"><h3>${h(t.name)}</h3><small>${members(t).length} nafar o‘yinchi</small></div><span class="tag">Ro‘yxatda</span></div><button class="membertoggle" onclick="toggleMembers('${t.id}')" aria-expanded="false" id="memberbtn_${t.id}">▾ Jamoa a’zolarini ko‘rish</button><ol class="memberlist hidden" id="members_${t.id}">${members(
+              `<div class="card teamcard"><div class="teamhead"><div class="teamicon">${i + 1}</div><div class="flex1"><h3>${h(t.name)}</h3><small>${members(t).length} nafar o‘yinchi${t.branch ? " · " + h(t.branch) : ""}</small></div><span class="tag">Ro‘yxatda</span></div><button class="membertoggle" onclick="toggleMembers('${t.id}')" aria-expanded="false" id="memberbtn_${t.id}">▾ Jamoa a’zolarini ko‘rish</button><ol class="memberlist hidden" id="members_${t.id}">${members(
                 t,
               )
                 .map(
@@ -363,13 +364,13 @@ function registerPage() {
   const own = myActiveTeam();
   if (own)
     return `<div class="pagehead"><h1>Jamoa ochish</h1></div><div class="card pad" style="max-width:760px"><p class="warning">Sizda “${h(own.name)}” jamoasi bor (${own.status === "pending" ? "tasdiq kutilmoqda" : "tasdiqlangan"}). Bir foydalanuvchi faqat bitta jamoa ocha oladi.</p><p class="notice">Yangi jamoa ochish uchun “Jamoalar” sahifasida avvalgisining ${own.status === "pending" ? "arizasini qaytarib oling" : "faoliyatini tugating"}.</p><button class="pill" onclick="go('teams')">← Jamoalar sahifasiga</button></div>`;
-  return `<div class="pagehead"><h1>Yangi jamoani ro‘yxatdan o‘tkazish</h1><p>Jamoa nomi, sardor va o‘yinchilar ism-familiyasini kiriting.</p></div><div class="card pad" style="max-width:760px">${msgs()}<form id="registerForm" onsubmit="registerTeam(event)"><div class="fieldgroup"><label>Jamoa nomi *</label><input class="field" id="teamname" maxlength="80" required placeholder="Masalan: Zukkolar" oninput="nameCheck()"></div><div class="gridfields">${Array.from({ length: 8 }, (_, i) => `<div class="fieldgroup"><label>${i === 0 ? "1. Jamoa sardori *" : i + 1 + ". O‘yinchi" + (i < 4 ? " *" : " (ixtiyoriy)")}</label><input class="field" id="p${i}" maxlength="100" placeholder="Ism Familiya" oninput="checkRegister()"></div>`).join("")}</div><p id="regcount" class="notice">Kamida 4 nafar, ko‘pi bilan 8 nafar o‘yinchi kiritiladi.</p><button class="primary" id="regsubmit" type="submit" disabled>Ro‘yxatdan o‘tishni tasdiqlash</button> <button class="pill" type="button" onclick="go('teams')">Bekor qilish</button></form></div>`;
+  return `<div class="pagehead"><h1>Yangi jamoani ro‘yxatdan o‘tkazish</h1><p>Jamoa nomi, sardor va o‘yinchilar ism-familiyasini kiriting.</p></div><div class="card pad" style="max-width:760px">${msgs()}<form id="registerForm" onsubmit="registerTeam(event)"><div class="fieldgroup"><label>Jamoa nomi *</label><input class="field" id="teamname" maxlength="80" required placeholder="Masalan: Zukkolar" oninput="nameCheck()"></div><div class="fieldgroup"><label>Jamoa filiali *</label><input class="field" id="teambranch" maxlength="60" required list="branchlist" placeholder="Masalan: Bosh idora, Yunusobod, Chilonzor" oninput="checkRegister()"><datalist id="branchlist">${branches().map((b) => `<option value="${h(b)}">`).join("")}</datalist></div><div class="gridfields">${Array.from({ length: 8 }, (_, i) => `<div class="fieldgroup"><label>${i === 0 ? "1. Jamoa sardori *" : i + 1 + ". O‘yinchi" + (i < 4 ? " *" : " (ixtiyoriy)")}</label><input class="field" id="p${i}" maxlength="100" placeholder="Ism Familiya" oninput="checkRegister()"></div>`).join("")}</div><p id="regcount" class="notice">Kamida 4 nafar, ko‘pi bilan 8 nafar o‘yinchi kiritiladi.</p><button class="primary" id="regsubmit" type="submit" disabled>Ro‘yxatdan o‘tishni tasdiqlash</button> <button class="pill" type="button" onclick="go('teams')">Bekor qilish</button></form></div>`;
 }
 window.checkRegister = () => {
   const name = $("teamname")?.value.trim() || "",
     arr = Array.from({ length: 8 }, (_, i) => $("p" + i)?.value.trim() || ""),
     n = arr.filter(Boolean).length;
-  const valid = !!name && !!arr[0] && n >= 4 && !nameDuplicate;
+  const valid = !!name && !!arr[0] && n >= 4 && !nameDuplicate && !!$("teambranch")?.value.trim();
   $("regsubmit").disabled = !valid;
   $("regcount").textContent =
     `To‘ldirilgan: ${n}/8. ${n < 4 ? "Yana " + (4 - n) + " nafar kerak." : nameDuplicate ? "O‘xshash nom, iltimos boshqa nom tanlang." : "Tasdiqlash mumkin."}`;
@@ -399,7 +400,7 @@ window.registerTeam = async (e) => {
     ).filter(Boolean);
   if (members.length < 4 || !$("p0").value.trim() || !name) return;
   try {
-    const result = await api("/api/team", { name, members });
+    const result = await api("/api/team", { name, members, branch: $("teambranch").value.trim() });
     state.page = "teams";
     await reload();
     state.message = result.message;
@@ -624,7 +625,7 @@ window.adminTab = async (k) => {
   state.message = "";
   state.error = "";
   if (k === "monitoring" && state.role === "owner") return loadMonitoring();
-  if (k === "users") {
+  if (k === "users" || k === "teamsadmin") {
     try {
       userList = (await api("/api/users")).users;
     } catch (e) {
@@ -743,14 +744,25 @@ function adminTeamCard(t) {
     ? `${h(t.createdByName)}${t.createdByEmail ? " · " + h(t.createdByEmail) : ""}`
     : "—";
   const when = t.created ? new Date(t.created).toLocaleString("uz-UZ") : "—";
+  const imported = t.source === "import";
+  const origin = imported
+    ? `Jadvaldan import qilingan${t.importedBy ? " (" + h(t.importedBy) + ")" : ""} · ${h(when)}`
+    : `Ariza yubordi: ${who} · ${h(when)}`;
+  const captainRow =
+    pending || t.approved
+      ? `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 12px"><label class="notice" style="margin:0"><strong>Sardor hisobi</strong> (apellyatsiya va “Mening jamoam” uchun):</label><select class="field" style="width:auto;min-width:240px" onchange="assignCaptain('${t.id}', this.value)"><option value="">— Biriktirilmagan —</option>${userList
+          .filter((u) => u.id === t.createdBy || !data.teams.some((x) => x.id !== t.id && x.createdBy === u.id && (x.status === "approved" || x.status === "pending")))
+          .map((u) => `<option value="${u.id}" ${u.id === t.createdBy ? "selected" : ""}>${h(u.name)} · ${h(u.email)}</option>`)
+          .join("")}</select>${!t.createdBy ? '<span class="tag" style="background:#fff4dc;color:#9a6a00">Sardor hisobi yo‘q</span>' : ""}</div>`
+      : "";
   const actions = closed
     ? '<span class="notice">Natijalar tarixida saqlanadi.</span>'
     : pending
     ? `<button class="primary" onclick="approveTeam('${t.id}')">✓ Tasdiqlash</button><button class="pill" onclick="rejectTeam('${t.id}')">Rad etish</button>`
-    : `${isOwner() && t.approved ? `<button class="pill" onclick="editTeam('${t.id}')">Nomini tahrirlash</button>` : ""}<button class="smallbtn danger" onclick="deleteTeam('${t.id}')">O‘chirish</button>`;
-  return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer" onclick="toggleAdminTeam('${t.id}')"><div><strong>${h(t.name)}</strong> ${status}<div class="notice">${members(t).length} a’zo</div></div><span class="muted">${open ? "▴ Yopish" : "▾ Ochish"}</span></div>${
+    : `${isOwner() && t.approved ? `<button class="pill" onclick="editTeam('${t.id}')">Nom va filialni tahrirlash</button>` : ""}<button class="smallbtn danger" onclick="deleteTeam('${t.id}')">O‘chirish</button>`;
+  return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer" onclick="toggleAdminTeam('${t.id}')"><div><strong>${h(t.name)}</strong> ${status}${imported ? ' <span class="tag" style="background:#e7f0fd;color:#2457a6">import</span>' : ""}<div class="notice">${members(t).length} a’zo${t.branch ? " · " + h(t.branch) : ""}${!t.createdBy && t.approved ? " · sardor hisobi biriktirilmagan" : ""}</div></div><span class="muted">${open ? "▴ Yopish" : "▾ Ochish"}</span></div>${
     open
-      ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><ol class="memberlist" style="margin-top:0">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol><p class="notice" style="margin:10px 0">Ariza yubordi: ${who}<br>Sana: ${h(when)}</p><div class="row" style="gap:8px">${actions}</div></div>`
+      ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><ol class="memberlist" style="margin-top:0">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol><p class="notice" style="margin:10px 0">${origin}</p>${captainRow}<div class="row" style="gap:8px">${actions}</div></div>`
       : ""
   }</div>`;
 }
@@ -759,7 +771,7 @@ function teamsAdmin() {
   const accepted = data.teams.filter((t) => t.approved);
   const rejected = data.teams.filter((t) => t.status === "rejected");
   const closed = data.teams.filter((t) => t.status === "closed");
-  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Jamoa nomini bosib, tarkibini oching. Arizani tasdiqlang yoki rad eting; tasdiqlangan jamoani o‘chirish ham mumkin.</p><div class="sectionTitle"><h2>Tasdiqlash kutilayotgan arizalar (${pending.length})</h2></div>${pending.map(adminTeamCard).join("") || '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map(adminTeamCard).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}${rejected.length ? `<div class="sectionTitle"><h2>Rad etilgan arizalar (${rejected.length})</h2></div>${rejected.map(adminTeamCard).join("")}` : ""}${closed.length ? `<div class="sectionTitle"><h2>Faoliyati tugatilgan jamoalar (${closed.length})</h2></div>${closed.map(adminTeamCard).join("")}` : ""}</div>`;
+  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Jamoa nomini bosib, tarkibini oching. Arizani tasdiqlang yoki rad eting; tasdiqlangan jamoani o‘chirish ham mumkin.</p>${importPanel()}<div class="sectionTitle"><h2>Tasdiqlash kutilayotgan arizalar (${pending.length})</h2></div>${pending.map(adminTeamCard).join("") || '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map(adminTeamCard).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}${rejected.length ? `<div class="sectionTitle"><h2>Rad etilgan arizalar (${rejected.length})</h2></div>${rejected.map(adminTeamCard).join("")}` : ""}${closed.length ? `<div class="sectionTitle"><h2>Faoliyati tugatilgan jamoalar (${closed.length})</h2></div>${closed.map(adminTeamCard).join("")}` : ""}</div>`;
 }
 window.approveTeam = async (id) => {
   if (await mutate("approveTeam", { teamId: id })) flash("Jamoa tasdiqlandi");
@@ -789,8 +801,121 @@ window.deleteTeam = async (id) => {
 window.editTeam = async (id) => {
   const t = team(id);
   const name = prompt("Jamoa nomi:", t.name);
-  if (name !== null) await mutate("editTeam", { teamId: id, name });
+  if (name === null) return;
+  const branch = prompt("Jamoa filiali:", t.branch || "");
+  if (branch === null) return;
+  if (await mutate("editTeam", { teamId: id, name, branch })) flash("Jamoa o‘zgartirildi");
 };
+window.assignCaptain = async (id, userId) => {
+  try {
+    const x = await api("/api/teams/" + encodeURIComponent(id) + "/captain", { userId: userId || null });
+    data = x.data;
+    normalize();
+    flash(x.message);
+  } catch (e) {
+    flash(e.message, true);
+  }
+};
+
+// ---------- Jadvaldan import (Google Sheets / Google Form javoblari) ----------
+let importOpen = false,
+  importRows = null,
+  importPreview = null;
+// Sheets'dan nusxalangan matn: ustunlar TAB bilan, ichida qator bo'lgan katakchalar qo'shtirnoqda
+function parseTSV(text) {
+  const rows = [];
+  let row = [],
+    cell = "",
+    quoted = false;
+  text = text.replace(/\r\n?/g, "\n");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"' && cell === "") quoted = true;
+    else if (c === "\t") {
+      row.push(cell);
+      cell = "";
+    } else if (c === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else cell += c;
+  }
+  row.push(cell);
+  rows.push(row);
+  return rows.filter((r) => r.some((x) => x.trim()));
+}
+function mapImportRows(table) {
+  const norm = (x) => x.toLocaleLowerCase("uz").replace(/[’‘ʻ`']/g, "");
+  const head = table[0].map(norm);
+  const find = (...keys) => head.findIndex((x) => keys.some((k) => x.includes(k)));
+  let col = { name: find("nomi", "jamoa (guruh)"), leader: find("lider", "sardor"), members: find("azo"), branch: find("filial") };
+  let body = table.slice(1);
+  if (col.name < 0 || col.members < 0) {
+    // Sarlavhasiz: Google Form'ning to'liq qatori (7 ustun) yoki 4 ustun: nom, lider, a'zolar, filial
+    body = table;
+    const w = Math.max(...table.map((r) => r.length));
+    col = w >= 7 ? { name: 3, leader: 4, members: 5, branch: 6 } : { name: 0, leader: 1, members: 2, branch: 3 };
+  }
+  return body.map((r) => ({
+    name: r[col.name] || "",
+    leader: col.leader >= 0 ? r[col.leader] || "" : "",
+    members: r[col.members] || "",
+    branch: col.branch >= 0 ? r[col.branch] || "" : "",
+  }));
+}
+window.toggleImport = () => {
+  importOpen = !importOpen;
+  importPreview = null;
+  draw();
+};
+window.previewImport = async () => {
+  const text = $("importText").value;
+  if (!text.trim()) return flash("Jadvaldan nusxalangan matnni qo‘ying", true);
+  importRows = mapImportRows(parseTSV(text));
+  try {
+    importPreview = (await api("/api/teams/import", { rows: importRows, dryRun: true })).preview;
+    state.error = "";
+    draw();
+    $("importText").value = text;
+  } catch (e) {
+    flash(e.message, true);
+  }
+};
+window.runImport = async () => {
+  if (!importRows) return;
+  try {
+    const x = await api("/api/teams/import", { rows: importRows });
+    data = x.data;
+    normalize();
+    importOpen = false;
+    importPreview = importRows = null;
+    flash(x.message);
+  } catch (e) {
+    flash(e.message, true);
+  }
+};
+function importPanel() {
+  if (!importOpen)
+    return `<div class="row between" style="margin:10px 0 4px;gap:10px;flex-wrap:wrap"><span class="notice">Google Form / Google Sheets orqali yig‘ilgan jamoalarni bir yo‘la qo‘shish mumkin.</span><button class="pill" onclick="toggleImport()">⇪ Jadvaldan import</button></div>`;
+  const ok = (importPreview || []).filter((x) => !x.error).length;
+  return `<div class="card" style="padding:16px;margin:12px 0;border:1px dashed var(--green)"><div class="row between"><strong>Jadvaldan import</strong><button class="smallbtn pill" onclick="toggleImport()">Yopish</button></div><p class="notice">Google Sheets'da sarlavha qatori bilan birga ustunlarni belgilang (Ctrl+C) va shu yerga qo‘ying (Ctrl+V). Kerakli ustunlar: <strong>Jamoa nomi</strong>, <strong>Jamoa lideri</strong>, <strong>Jamoa a’zolari</strong>, <strong>Filial</strong>. Lider birinchi o‘rinda sardor bo‘ladi; turkcha harflar (ş, ç, ğ, ö) va raqamlash avtomatik tuzatiladi. Import qilingan jamoalar darhol tasdiqlangan bo‘ladi.</p><textarea class="field" id="importText" rows="6" placeholder="Jamoa (guruh) nomi	Jamoa lideri (F.I.O.)	Jamoa a'zolari (F.I.O.)	Jamoa filiali"></textarea><div class="row" style="gap:8px;margin-top:10px"><button class="pill" onclick="previewImport()">Ko‘rib chiqish</button>${importPreview ? `<button class="primary" onclick="runImport()" ${ok ? "" : "disabled"}>✓ ${ok} ta jamoani import qilish</button>` : ""}</div>${
+    importPreview
+      ? `<div class="tablewrap" style="margin-top:12px"><table class="datatable"><thead><tr><th>№</th><th>Jamoa</th><th>Filial</th><th style="text-align:left">A’zolar (qalin — sardor)</th><th style="text-align:left">Holat</th></tr></thead><tbody>${importPreview
+          .map(
+            (x, i) =>
+              `<tr><td>${i + 1}</td><td><strong>${h(x.name || "—")}</strong></td><td>${h(x.branch || "—")}</td><td style="white-space:normal;text-align:left;min-width:240px;font-size:13px;line-height:1.45">${x.members.map((m, j) => (j === 0 ? `<strong>${h(m)}</strong>` : h(m))).join("<br>")}</td><td style="white-space:normal;text-align:left;min-width:170px">${x.error ? `<span style="color:var(--red)">✗ ${h(x.error)}</span>` : `<span style="color:var(--green)">✓ qo‘shiladi</span>${x.notes.length ? `<br><small class="muted">${h(x.notes.join("; "))}</small>` : ""}`}</td></tr>`,
+          )
+          .join("")}</tbody></table></div>`
+      : ""
+  }</div>`;
+}
 let appealFilter = "open";
 const openAppeals = new Set();
 function appealsAdmin() {

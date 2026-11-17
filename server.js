@@ -10,6 +10,7 @@ const PgSession = require('connect-pg-simple')(session);
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const monitor = require('./monitor');
+const teamImport = require('./teamImport');
 
 // ---------- Sozlamalar ----------
 const isProd = process.env.NODE_ENV === 'production';
@@ -209,7 +210,7 @@ function safeState(src, user) {
   s.teams = s.teams
     .filter((t) => t.approved || t.status === 'closed' || t.createdBy === user.id)
     .map((t) => ({
-      id: t.id, name: t.name, members: t.members, approved: !!t.approved,
+      id: t.id, name: t.name, members: t.members, branch: t.branch, approved: !!t.approved,
       status: t.status, mine: t.createdBy === user.id, closedAt: t.closedAt,
     }));
   return s;
@@ -359,7 +360,9 @@ app.get('/api/team/name-check', requires('user'), async (req, res, next) => {
 app.post('/api/team', requires('user'), (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 80);
   const members = req.body.members;
+  const branch = teamImport.fixLetters(req.body.branch).slice(0, 60);
   update(req, res, 'team_register', { name }, (s) => {
+    if (!branch) bad('Jamoa filialini kiriting');
     const okMembers = Array.isArray(members) && members.length >= 4 && members.length <= 8 &&
       members.every((x) => typeof x === 'string' && x.trim().length >= 3 && x.trim().length <= 100);
     if (!name || !okMembers) bad('Jamoa nomi va 4–8 nafar a’zoning ism-familiyasi (kamida 3 harf) talab etiladi');
@@ -369,12 +372,73 @@ app.post('/api/team', requires('user'), (req, res) => {
       : `Sizda “${own.name}” jamoasi bor. Yangi jamoa ochish uchun avval uning faoliyatini tugating.`);
     if (similar(name, s.teams)) bad('O‘xshash nom, iltimos boshqa nom tanlang.');
     s.teams.push({
-      id: 't' + crypto.randomUUID(), name, members: members.map((x) => x.trim()),
+      id: 't' + crypto.randomUUID(), name, members: members.map((x) => x.trim()), branch,
       status: 'pending', approved: false, created: Date.now(),
       createdBy: req.user.id, createdByName: req.user.name, createdByEmail: req.user.email,
     });
     return 'Ariza yuborildi. Jamoa admin tasdiqlagach ro‘yxatda ko‘rinadi.';
   });
+});
+
+// Jadvaldan import (admin/ega). dryRun: true — faqat ko'rib chiqish, hech narsa saqlanmaydi.
+app.post('/api/teams/import', requires('staff'), async (req, res, next) => {
+  const rows = Array.isArray(req.body.rows) ? req.body.rows.slice(0, 300) : [];
+  const dryRun = !!req.body.dryRun;
+  if (!rows.length) return res.status(400).json({ error: 'Import uchun qator topilmadi' });
+  const plan = (s) => {
+    const taken = [...s.teams];
+    return rows.map((r) => {
+      const x = teamImport.cleanRow(r || {});
+      if (!x.error && similar(x.name, taken)) x.error = 'Bunday yoki o‘xshash nomli jamoa allaqachon bor';
+      if (!x.error) taken.push({ id: 'new', name: x.name, status: 'approved' });
+      return x;
+    });
+  };
+  if (dryRun) {
+    try {
+      const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
+      return res.json({ preview: plan(migrate(st[0].data)) });
+    } catch (e) { return next(e); }
+  }
+  let result;
+  update(req, res, 'importTeams', { count: rows.length }, (s) => {
+    result = plan(s);
+    const ok = result.filter((x) => !x.error);
+    for (const x of ok) {
+      s.teams.push({
+        id: 't' + crypto.randomUUID(), name: x.name, members: x.members, branch: x.branch,
+        status: 'approved', approved: true, created: Date.now(), source: 'import',
+        importedBy: req.user.name, createdBy: null,
+      });
+    }
+    if (!ok.length) bad('Import qilinadigan yangi jamoa yo‘q (hammasi xato yoki allaqachon mavjud)');
+    return `${ok.length} ta jamoa qo‘shildi${result.length > ok.length ? `, ${result.length - ok.length} tasi o‘tkazib yuborildi` : ''}`;
+  });
+});
+
+// Jamoaga sardor hisobini biriktirish (import qilingan jamoa uchun). userId bo'sh — ajratish.
+app.post('/api/teams/:id/captain', requires('staff'), async (req, res, next) => {
+  try {
+    const userId = req.body.userId ? String(req.body.userId) : null;
+    let u = null;
+    if (userId) {
+      const { rows } = await pool.query(`SELECT ${USER_FIELDS} FROM app_users WHERE id = $1`, [userId]);
+      u = rows[0];
+      if (!u) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+    }
+    update(req, res, 'assignCaptain', { teamId: req.params.id, userId }, (s) => {
+      const tm = s.teams.find((t) => t.id === req.params.id && ACTIVE_STATUSES.includes(t.status));
+      if (!tm) bad('Faol jamoa topilmadi', 404);
+      if (u) {
+        const other = s.teams.find((t) => t.id !== tm.id && t.createdBy === u.id && ACTIVE_STATUSES.includes(t.status));
+        if (other) bad(`${u.name} allaqachon “${other.name}” jamoasining sardori. Bir foydalanuvchi — bitta jamoa.`);
+      }
+      tm.createdBy = u?.id || null;
+      tm.createdByName = u?.name || null;
+      tm.createdByEmail = u?.email || null;
+      return u ? `“${tm.name}” jamoasiga sardor hisobi biriktirildi: ${u.name}` : 'Sardor hisobi ajratildi';
+    });
+  } catch (e) { next(e); }
 });
 
 // Foydalanuvchi o'z jamoasi faoliyatini tugatadi (kutilayotgan arizani qaytarib oladi)
@@ -531,6 +595,7 @@ app.post('/api/action', requires('staff'), (req, res) => {
         if (!name) bad('Nom bo‘sh');
         if (similar(name, s.teams, tm.id)) bad('O‘xshash nom, iltimos boshqa nom tanlang');
         tm.name = name;
+        if (payload.branch !== undefined) tm.branch = teamImport.fixLetters(payload.branch).slice(0, 60);
         return 'Jamoa o‘zgartirildi';
       }
       default:
