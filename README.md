@@ -34,14 +34,37 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 
 ## Jarayon
 
-- **Jamoa arizasi:** 4–8 a'zo, birinchi kishi sardor. Bir foydalanuvchida bir vaqtda bitta kutilayotgan ariza. Holati "Mening arizalarim"da ko'rinadi.
+- **Jamoa:** bir foydalanuvchi faqat **bitta** jamoa ochadi (4–8 a'zo, birinchi kishi sardor). Holati "Jamoalar → Mening jamoam"da ko'rinadi.
+  - Tasdiq kutilayotgan arizani **qaytarib olish** mumkin.
+  - Tasdiqlangan jamoaning **faoliyatini tugatish** mumkin. Jamoa e'lon qilingan turda qatnashgan bo'lsa, u "faoliyati tugatilgan" bo'lib arxivlanadi: natijalari va reytingdagi qatori saqlanadi, yangi turlarga qo'shilmaydi. Qatnashmagan bo'lsa, butunlay o'chadi. Shundan keyin foydalanuvchi yangi jamoa ocha oladi.
+  - Admin jamoani o'chirganda ham shu qoida ishlaydi.
 - O'xshash nomlar (raqam qo'shish, `x/h` farqi, mayda imlo farqi) serverda bloklanadi.
 - Admin tasdiqlagan jamoalar turga qo'shiladi, javoblar `+/−` bilan kiritiladi. E'lon qilinmagan tur javoblari faqat admin/egaga ko'rinadi.
-- Turdagi tartib: **to'g'ri javoblar soni** → **SR** (savol reytingi = qatnashgan jamoalar − shu savolni topganlar + 1) → nom. Tur balli: `jamoalar soni − o'rin + 1`.
-- **Apellyatsiya:** ega yoqqanda ochiladi. Faqat jamoani ro'yxatdan o'tkazgan sardor, jamoa qatnashgan va hali e'lon qilinmagan tur bo'yicha yuboradi.
+
+## Hisoblash
+
+- **Savol reytingi (SR):** `turda qatnashgan jamoalar − savolni topgan jamoalar + 1`. Kam jamoa topgan savol qimmatroq.
+- Jamoaning SR'i — u topgan savollar reytinglarining yig'indisi.
+- Turdagi o'rin: **to'g'ri javoblar soni** → teng bo'lsa **SR**. Ikkalasi ham teng bo'lsa jamoalar o'rinni **bo'lishadi** va bir xil ball oladi.
+- **Tur balli:** `qatnashgan jamoalar − o'rin + 1`.
+- **Mavsum reytingi:** tur ballari yig'indisi → teng bo'lsa jami to'g'ri javoblar → jami SR.
+
+## Apellyatsiya
+
+- Ega "Huquq va sozlamalar"da yoqadi. Faqat jamoa sardori, jamoasi qatnashgan va hali e'lon qilinmagan tur bo'yicha, **yozma** ravishda yuboradi.
+- Matn uzunligi **so'z chegarasi** bilan cheklanadi (standart 100). Chegarani admin va ega "Apellyatsiyalar" bo'limida o'zgartiradi.
+- Holatlar: **Yuborildi → Ko'rib chiqilmoqda → Ko'rib chiqildi**. Admin javob yozadi; "Ko'rib chiqildi" uchun javob majburiy. Foydalanuvchi holat va javobni "Apellyatsiya" sahifasida ko'radi.
+- Bir savol bo'yicha ochiq apellyatsiya bo'lsa, ikkinchisini yuborib bo'lmaydi.
+
+## Monitoring (faqat ega)
+
+"Boshqaruv → Monitoring": server holati, xotira/protsessor/so'rovlar grafigi (1 soat – 30 kun), xatolar va sekin so'rovlar, ishga tushish/to'xtash/kutilmagan yiqilishlar, baza hajmi va jadvallari, faollik (kirishlar, xato parollar, jamoa va apellyatsiya holatlari), so'nggi harakatlar va **Railway xarajat taxmini**. Ma'lumot har daqiqada yig'iladi va 30 kun saqlanadi. Xarajat taxminiga Postgres servisining o'z xotira/protsessor sarfi kirmaydi — aniq summa Railway → Usage'da.
 
 ## Xavfsizlik
 
 - Parollar `scrypt` bilan xeshlanadi, ochiq holda saqlanmaydi. Kirish/ro'yxatdan o'tishga urinishlar soni cheklangan.
 - `SESSION_SECRET` va `OWNER_PASSWORD`ni hech kimga bermang, `.env` faylini repoga qo'shmang.
 - Admin amallari `audit_log` jadvalida qayd etiladi.
+
+---
+G'oya va platforma muallifi: **Adhamjon Zokirjanov**
