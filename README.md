@@ -67,6 +67,20 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 - Har bir foydalanuvchi "Yordam" bo'limida muammo yozadi: turda qatnashgani belgilanmagan, natijada xato, jamoa, saytdagi texnik xato yoki boshqa. Turni ham ko'rsatish mumkin.
 - Admin va ega "Boshqaruv → Yordam"da ko'radi (yangilari soni menyuda), javob yozadi; holatlar apellyatsiyadagidek. Bir foydalanuvchida bir vaqtda 5 tagacha ochiq murojaat.
 
+## Jamoa profili va medallar
+
+- Har bir jamoaning profili bor (`#/jamoa/<id>`): mavsumdagi o'rni, ball, o'ynagan turlari, to'g'ri javoblar, eng yaxshi natija, faollik grafigi, turlar bo'yicha jadval, tarkib.
+- **Tavsif va suratlar** (8 tagacha, har biri 700 KB gacha; brauzer yuklashdan oldin siqadi) — jamoa sardori yoki admin/ega qo'shadi. Suratlar Postgres'da saqlanadi va faqat tizimga kirganlarga ko'rinadi.
+- **Medallar** — e'lon qilingan turlarda savolni nechta jamoa topganiga qarab: 1 jamoa — Olmos, 2–3 — Zumrad, 20% dan kam — Oltin, 50% gacha — Kumush, hamma topgan — Bronza. Kumush va bronza har bir tur bo'yicha bitta medalga (×N) yig'iladi. Inventarda medal bosilsa kattalashadi, og'dirib va ag'darib ko'rish mumkin.
+- **Savollar xaritasi** (`#/savollar`): har bir tur uchun hamma topgan, hech kim topmagan va kam topilgan savollar, kim topgani va qanday medal olgani.
+- Bosh sahifada reyting oynasi: oxirgi turdagi o'rin o'zgarishi (▲▼) va eng ko'p o'sgan jamoalar.
+
+## Navigatsiya
+
+- Har bir sahifaning o'z manzili bor, brauzerning "orqaga" tugmasi ishlaydi, havolani ulashish mumkin.
+- Telefon va planshetda pastki menyu; ikki marta bosilganda sahifa kattalashmaydi.
+- Sahifa gzip bilan siqib beriladi, logotip alohida keshlanadi.
+
 ## Monitoring (faqat ega)
 
 "Boshqaruv → Monitoring": server holati, xotira/protsessor/so'rovlar grafigi (1 soat – 30 kun), xatolar va sekin so'rovlar, ishga tushish/to'xtash/kutilmagan yiqilishlar, baza hajmi va jadvallari, faollik (kirishlar, xato parollar, jamoa va apellyatsiya holatlari), so'nggi harakatlar va **Railway xarajat taxmini**. Ma'lumot har daqiqada yig'iladi va 30 kun saqlanadi. Xarajat taxminiga Postgres servisining o'z xotira/protsessor sarfi kirmaydi — aniq summa Railway → Usage'da.

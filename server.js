@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const rateLimit = require('express-rate-limit');
@@ -104,6 +105,13 @@ async function init() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
   await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
   await pool.query(`CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at)`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS team_photo(
+    id TEXT PRIMARY KEY, team_id TEXT NOT NULL, mime TEXT NOT NULL, data BYTEA NOT NULL,
+    bytes INTEGER NOT NULL, uploaded_by TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS team_photo_team ON team_photo(team_id, created_at)`);
+  // O'chirilgan jamoalarning suratlarini tozalash
+  const ids = (await pool.query('SELECT data FROM app_state WHERE id = 1')).rows[0].data.teams.map((t) => t.id);
+  await pool.query('DELETE FROM team_photo WHERE NOT (team_id = ANY($1::text[]))', [ids]);
   const st = await pool.query('SELECT data FROM app_state WHERE id = 1');
   await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(migrate(st.rows[0].data))]);
   // Sayt egasi Railway'dagi OWNER_EMAIL / OWNER_PASSWORD dan yaratiladi (har ishga tushishda yangilanadi)
@@ -136,7 +144,10 @@ async function checkPassword(pw, stored) {
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
 app.use(monitor.requestTimer);
+// Surat yuklash uchun kattaroq so'rov tanasi (faqat shu yo'lda)
+app.use('/api/teams/:id/photos', express.json({ limit: '1.2mb' }));
 app.use(express.json({ limit: '80kb' }));
 app.use(session({
   store: new PgSession({ pool, tableName: 'session', createTableIfMissing: true }),
@@ -210,7 +221,8 @@ function safeState(src, user) {
   s.teams = s.teams
     .filter((t) => t.approved || t.status === 'closed' || t.createdBy === user.id)
     .map((t) => ({
-      id: t.id, name: t.name, members: t.members, branch: t.branch, approved: !!t.approved,
+      id: t.id, name: t.name, members: t.members, branch: t.branch, approved: !!t.approved, description: t.description,
+      photos: t.photos || 0,
       status: t.status, mine: t.createdBy === user.id, closedAt: t.closedAt,
     }));
   return s;
@@ -462,6 +474,80 @@ app.post('/api/teams/:id/captain', requires('staff'), async (req, res, next) => 
       tm.createdByName = u?.name || null;
       tm.createdByEmail = u?.email || null;
       return u ? `“${tm.name}” jamoasiga sardor hisobi biriktirildi: ${u.name}` : 'Sardor hisobi ajratildi';
+    });
+  } catch (e) { next(e); }
+});
+
+// ---------- Jamoa profili: tavsif va suratlar (sardor yoki admin/ega) ----------
+const MAX_PHOTOS = 8, MAX_PHOTO_BYTES = 700 * 1024;
+const canEditTeam = (tm, user) => tm && tm.status !== 'closed' && (isStaff(user) || (tm.createdBy && tm.createdBy === user.id));
+
+app.post('/api/teams/:id/profile', requires('user'), (req, res) => {
+  update(req, res, 'teamProfile', { teamId: req.params.id }, (s) => {
+    const tm = s.teams.find((t) => t.id === req.params.id);
+    if (!canEditTeam(tm, req.user)) bad('Profilni faqat jamoa sardori yoki admin tahrirlaydi', 403);
+    const description = String(req.body.description || '').trim();
+    if (description.length > 600) bad('Tavsif 600 belgidan oshmasin');
+    tm.description = description;
+    return 'Jamoa tavsifi saqlandi';
+  });
+});
+
+app.get('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT id, created_at FROM team_photo WHERE team_id = $1 ORDER BY created_at DESC', [req.params.id]);
+    res.json({ photos: rows });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/photos/:pid', requires('user'), async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT mime, data FROM team_photo WHERE id = $1', [req.params.pid]);
+    if (!rows[0]) return res.status(404).end();
+    res.set('Content-Type', rows[0].mime).set('Cache-Control', 'private, max-age=604800, immutable').send(rows[0].data);
+  } catch (e) { next(e); }
+});
+
+async function syncPhotoCount(teamId) {
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM team_photo WHERE team_id = $1', [teamId]);
+  return rows[0].n;
+}
+
+app.post('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
+  try {
+    const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
+    const tm = st[0].data.teams.find((t) => t.id === req.params.id);
+    if (!canEditTeam(tm, req.user)) return res.status(403).json({ error: 'Surat qo‘shishni faqat jamoa sardori yoki admin qila oladi' });
+    const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body.image || ''));
+    if (!m) return res.status(400).json({ error: 'Faqat JPG, PNG yoki WEBP surat yuklanadi' });
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > MAX_PHOTO_BYTES) return res.status(400).json({ error: 'Surat hajmi 700 KB dan oshmasin' });
+    if ((await syncPhotoCount(tm.id)) >= MAX_PHOTOS) return res.status(400).json({ error: `Jamoada ko‘pi bilan ${MAX_PHOTOS} ta surat bo‘ladi` });
+    const id = 'p' + crypto.randomUUID();
+    await pool.query('INSERT INTO team_photo(id, team_id, mime, data, bytes, uploaded_by) VALUES ($1, $2, $3, $4, $5, $6)',
+      [id, tm.id, m[1], buf, buf.length, req.user.id]);
+    const n = await syncPhotoCount(tm.id);
+    update(req, res, 'teamPhoto', { teamId: tm.id, photo: id }, (s) => {
+      const t = s.teams.find((x) => x.id === tm.id);
+      if (t) t.photos = n;
+      return 'Surat qo‘shildi';
+    });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/photos/:pid/delete', requires('user'), async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT team_id FROM team_photo WHERE id = $1', [req.params.pid]);
+    if (!rows[0]) return res.status(404).json({ error: 'Surat topilmadi' });
+    const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
+    const tm = st[0].data.teams.find((t) => t.id === rows[0].team_id);
+    if (!canEditTeam(tm, req.user)) return res.status(403).json({ error: 'Suratni faqat jamoa sardori yoki admin o‘chiradi' });
+    await pool.query('DELETE FROM team_photo WHERE id = $1', [req.params.pid]);
+    const n = await syncPhotoCount(tm.id);
+    update(req, res, 'teamPhotoDelete', { teamId: tm.id }, (s) => {
+      const t = s.teams.find((x) => x.id === tm.id);
+      if (t) t.photos = n;
+      return 'Surat o‘chirildi';
     });
   } catch (e) { next(e); }
 });
@@ -758,8 +844,11 @@ app.post('/api/users/:id/password', requires('owner'), async (req, res, next) =>
 app.use('/api', (req, res) => res.status(404).json({ error: 'API topilmadi' }));
 
 // ---------- Sayt ----------
-app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: 'index.html',
+  setHeaders: (res, file) => res.set('Cache-Control', file.endsWith('.html') ? 'no-cache' : 'public, max-age=86400'),
+}));
+app.get('*', (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.use((err, req, res, next) => {
   console.error(err);
