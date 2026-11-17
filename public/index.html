@@ -263,45 +263,23 @@ body.is-auth .tabbar{display:none!important}
 .ptable td,.ptable th{white-space:nowrap}
 @media (max-width:900px){.pgrid{grid-template-columns:1fr}.phero{grid-template-columns:auto 1fr}.pavatar{width:72px;height:72px;border-radius:20px}.pavatar span{font-size:24px}}
 
-/* Medallar: dumaloq, yozuvsiz, o'yilgan naqsh; yuqori darajalar o'z rangidagi nur bilan */
+/* Medallar: dumaloq, yozuvsiz, naqshsiz — faqat material va nozik halqa */
 .inventory{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:18px 10px;justify-items:center}
 .medal{display:grid;place-items:center;border:0;background:transparent;padding:10px;border-radius:50%;cursor:zoom-in;transition:transform .25s ease-out;animation:medalIn .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 45ms)}
 @keyframes medalIn{from{opacity:0;transform:translateY(10px) scale(.92)}}
-.medal-art{--s:70px;--aura:transparent;position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%}
+.medal-art{--s:70px;position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%}
 .medal-art.sm{--s:40px}.medal-art.lg{--s:min(66vw,260px)}.medal-art.xs{--s:16px}
-.medal-disc{position:relative;display:grid;place-items:center;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;box-shadow:inset 0 calc(var(--s) * .02) calc(var(--s) * .03) rgba(255,255,255,.8),inset 0 calc(var(--s) * -.05) calc(var(--s) * .09) rgba(0,0,0,.24),0 calc(var(--s) * .07) calc(var(--s) * .15) rgba(14,59,44,.22)}
-.medal-art.xs .medal-disc{box-shadow:inset 0 1px 1px rgba(255,255,255,.7),inset 0 -2px 3px rgba(0,0,0,.22)}
-.medal-ring{position:absolute;inset:9%;border-radius:50%;border:max(1px,calc(var(--s) * .012)) solid rgba(255,255,255,.5);box-shadow:inset 0 1px 2px rgba(0,0,0,.18)}
-.medal-emblem{position:relative;width:62%;height:62%;color:rgba(80,50,10,.55);filter:drop-shadow(0 1px 0 rgba(255,255,255,.55)) drop-shadow(0 -1px 0 rgba(0,0,0,.18))}
+.medal-disc{position:relative;display:grid;place-items:center;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;box-shadow:inset 0 calc(var(--s) * .02) calc(var(--s) * .03) rgba(255,255,255,.35),inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.28),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(14,40,30,.22)}
+.medal-art.xs .medal-disc{box-shadow:inset 0 -2px 3px rgba(0,0,0,.25)}
+.medal-ring{position:absolute;inset:12%;border-radius:50%;border:max(1px,calc(var(--s) * .01)) solid rgba(255,255,255,.22)}
 .medal-art.xs .medal-ring{display:none}
-/* Nur (aura): faqat yuqori darajalarda, ohista "nafas oladi" */
-.medal-art.takrorlanmas{--aura:rgba(168,85,247,.8)}
-.medal-art.afsonaviy{--aura:rgba(239,68,68,.7)}
-.medal-art.oltin{--aura:rgba(250,204,21,.65)}
-.medal-art.takrorlanmas,.medal-art.afsonaviy,.medal-art.oltin{animation:aura 3.4s ease-in-out infinite}
-.medal-art.xs{animation:none!important;filter:drop-shadow(0 0 3px var(--aura))}
-@keyframes aura{0%,100%{filter:drop-shadow(0 0 calc(var(--s) * .07) var(--aura))}50%{filter:drop-shadow(0 0 calc(var(--s) * .2) var(--aura))}}
-/* Materiallar */
-.medal-disc.bronza{background:radial-gradient(circle at 32% 26%,#f7d6b2,#c98149 48%,#8b4b22 90%)}
-.medal-disc.bronza .medal-emblem{color:rgba(90,40,10,.5)}
-.medal-disc.kumush{background:radial-gradient(circle at 32% 26%,#ffffff,#d3dadf 46%,#8e999f 90%)}
-.medal-disc.kumush .medal-emblem{color:rgba(50,62,70,.45)}
-.medal-disc.oltin{background:radial-gradient(circle at 32% 26%,#fff8d6,#f2c64f 42%,#b07b12 90%)}
-.medal-disc.oltin .medal-emblem{color:rgba(120,72,0,.55)}
-/* Afsonaviy: yoqut-qizil, oltin hoshiya */
-.medal-disc.afsonaviy{background:radial-gradient(circle at 32% 26%,#ffd6cc,#f0525a 36%,#a3123a 68%,#4a0418 96%);box-shadow:inset 0 0 0 calc(var(--s) * .055) #e9b850,inset 0 0 0 calc(var(--s) * .07) rgba(80,10,10,.35),inset 0 calc(var(--s) * -.05) calc(var(--s) * .09) rgba(0,0,0,.3),0 calc(var(--s) * .07) calc(var(--s) * .15) rgba(80,10,20,.3)}
-.medal-disc.afsonaviy .medal-ring{inset:14%;border-color:rgba(255,215,140,.7)}
-.medal-disc.afsonaviy .medal-emblem{color:rgba(255,226,180,.92);filter:drop-shadow(0 1px 1px rgba(60,0,10,.55))}
-/* Takrorlanmas: mifik — kosmik binafsha, tovlanuvchi hoshiya, sekin aylanuvchi nur */
-.medal-disc.takrorlanmas{background:radial-gradient(circle at 32% 26%,#f6ecff,#b47cff 30%,#6d28d9 58%,#1f0a52 96%);box-shadow:inset 0 0 0 calc(var(--s) * .05) rgba(255,255,255,.35),inset 0 calc(var(--s) * -.05) calc(var(--s) * .1) rgba(10,0,40,.4),0 calc(var(--s) * .07) calc(var(--s) * .16) rgba(40,10,90,.35)}
-.medal-disc.takrorlanmas::before{content:"";position:absolute;inset:-25%;background:conic-gradient(from 0deg,rgba(255,120,220,.35),rgba(120,200,255,.35),rgba(140,255,210,.3),rgba(255,230,140,.3),rgba(255,120,220,.35));mix-blend-mode:overlay;animation:spin 14s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.medal-disc.takrorlanmas .medal-ring{border-color:rgba(240,220,255,.75)}
-.medal-disc.takrorlanmas .medal-emblem{color:#fbf5ff;filter:drop-shadow(0 0 calc(var(--s) * .04) rgba(230,200,255,.9))}
-/* Yuqori darajalarda nozik yaltiroq */
-.medal-disc.takrorlanmas::after,.medal-disc.afsonaviy::after,.medal-disc.oltin::after{content:"";position:absolute;inset:-20%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.55) 50%,transparent 58%);transform:translateX(-120%);animation:gemShine 7s ease-in-out infinite;animation-delay:calc(var(--i, 0) * 350ms + 1s)}
-@keyframes gemShine{0%,84%{transform:translateX(-120%)}97%,100%{transform:translateX(120%)}}
-.medal-art.xs .medal-disc::after,.medal-art.sm .medal-disc::after,.medal-art.xs .medal-disc::before{display:none}
+.medal-disc.bronza{background:radial-gradient(circle at 34% 28%,#d9a67c,#a8653a 50%,#6e3a1b 92%)}
+/* Afsonaviy: to'q qizil (bordo), xira oltin hoshiya */
+.medal-disc.afsonaviy{background:radial-gradient(circle at 34% 28%,#8f2333,#5c0d1d 50%,#2b030b 94%);box-shadow:inset 0 0 0 calc(var(--s) * .04) #9c7a3c,inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.35),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(40,5,10,.3)}
+.medal-disc.afsonaviy .medal-ring{border-color:rgba(200,160,90,.35)}
+/* Takrorlanmas: to'q binafsha, sokin */
+.medal-disc.takrorlanmas{background:radial-gradient(circle at 34% 28%,#7b52c7,#4a2496 50%,#1c0c45 94%);box-shadow:inset 0 0 0 calc(var(--s) * .04) rgba(210,190,255,.28),inset 0 calc(var(--s) * -.04) calc(var(--s) * .08) rgba(0,0,0,.35),0 calc(var(--s) * .06) calc(var(--s) * .14) rgba(25,10,60,.3)}
+.medal-disc.takrorlanmas .medal-ring{border-color:rgba(220,205,255,.3)}
 .medal-legend{display:flex;flex-wrap:wrap;gap:10px 14px;font-size:13px;color:#4d6258}
 .medal-legend span{display:inline-flex;align-items:center;gap:7px}
 
@@ -315,9 +293,8 @@ body.is-auth .tabbar{display:none!important}
 @keyframes mviewIn{from{transform:scale(.6) rotateY(-30deg);opacity:0}}
 .mview-front,.mview-back{grid-area:1/1;-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
 .mview-back{transform:rotateY(180deg);align-self:center;justify-self:center;width:min(66vw,260px);height:min(66vw,260px);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:12%;color:var(--ink);background:radial-gradient(circle at 32% 26%,#ffffff,#e9efeb 60%,#c9d5ce);box-shadow:inset 0 0 0 6px rgba(255,255,255,.6),0 20px 40px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
-.mview-back.oltin{background:radial-gradient(circle at 32% 26%,#fffbe9,#f4e3b1 60%,#d9b765)}
-.mview-back.afsonaviy{background:radial-gradient(circle at 32% 26%,#fff3f1,#f6cfcf 60%,#e08a93)}
-.mview-back.takrorlanmas{background:radial-gradient(circle at 32% 26%,#fbf7ff,#e6d8fb 60%,#b99be9)}
+.mview-back.afsonaviy{background:radial-gradient(circle at 32% 26%,#fbf3f3,#ead3d6 60%,#c99aa1)}
+.mview-back.takrorlanmas{background:radial-gradient(circle at 32% 26%,#f8f5fd,#e2d9f3 60%,#b8a6dc)}
 .mview-back.bronza{background:radial-gradient(circle at 32% 26%,#fff3e8,#efd1b6 60%,#c99a72)}
 .mview-tier{font:800 18px/1 var(--display);color:var(--baize)}
 .mview-back strong{font:700 15px/1.2 var(--display)}
@@ -337,11 +314,9 @@ body.is-auth .tabbar{display:none!important}
 .qcell{aspect-ratio:1;border-radius:7px;display:grid;place-items:center;font:600 10px/1 var(--text);color:#7b8b83;background:rgba(255,255,255,.7);box-shadow:inset 0 -3px 0 rgba(14,59,44,calc(.08 + var(--p) * .3))}
 .qcell b{font-weight:600}
 .qcell.zero{background:repeating-linear-gradient(135deg,rgba(14,59,44,.05) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 1px rgba(14,59,44,.14);color:#9aa8a1}
-.qcell.bronza{background:linear-gradient(160deg,#e9b88d,#b8733f);color:#4a250c}
-.qcell.kumush{background:linear-gradient(160deg,#f3f6f8,#b4bec4);color:#33424a}
-.qcell.oltin{background:linear-gradient(160deg,#fde68a,#d9a21f);color:#5a3f08;box-shadow:0 0 8px rgba(250,204,21,.45)}
-.qcell.afsonaviy{background:linear-gradient(160deg,#f87171,#a3123a);color:#fff;box-shadow:0 0 8px rgba(239,68,68,.45)}
-.qcell.takrorlanmas{background:linear-gradient(160deg,#c4a1ff,#5b21b6);color:#fff;box-shadow:0 0 10px rgba(168,85,247,.55)}
+.qcell.bronza{background:linear-gradient(160deg,#c98e63,#8a4d26);color:#fbeee4}
+.qcell.afsonaviy{background:linear-gradient(160deg,#7d1a2b,#3d0611);color:#f3dfe2}
+.qcell.takrorlanmas{background:linear-gradient(160deg,#6a44b8,#24104f);color:#ece6fb}
 .qcols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
 .qchips{display:flex;flex-wrap:wrap;gap:6px}
 .qchip{min-width:34px;text-align:center;padding:7px 8px;border-radius:10px;font:700 13px/1 var(--display);background:rgba(14,59,44,.06);color:var(--baize)}
@@ -365,7 +340,7 @@ body.is-auth .tabbar{display:none!important}
   .backlink{margin-top:14px}
   .pagehead h1{font-size:26px}
 }
-@media (prefers-reduced-motion:reduce){.medal,.medal-art,.medal-disc::before,.medal-disc::after,.mview,.mview-3d,.mview-front,.mview-back,.sheet-card,.sheet-bg,.lightbox,.ph img{animation:none!important;transition:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
+@media (prefers-reduced-motion:reduce){.medal,.mview,.mview-3d,.mview-front,.mview-back,.sheet-card,.sheet-bg,.lightbox,.ph img{animation:none!important;transition:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important}}
 /* Tor ekranda kontent hech qachon ekrandan chiqmasin */
 main.shell{overflow-x:clip}
 @media (max-width:900px){
@@ -758,12 +733,10 @@ function summary(skipId) {
 }
 // ---------- Medallar ----------
 // Savolni topgan jamoalar soni (s) va turda qatnashganlar (n) bo'yicha:
-// 1 jamoa — Takrorlanmas; 2 — Afsonaviy; 3 — Oltin; yarmigacha — Kumush; hamma topgan — Bronza.
+// 1 jamoa — Takrorlanmas; 2 jamoa — Afsonaviy; hamma topgan — Bronza.
 const MEDALS = {
   takrorlanmas: { name: "Takrorlanmas", rank: 5, note: "savolni faqat bitta jamoa topgan" },
   afsonaviy: { name: "Afsonaviy", rank: 4, note: "savolni faqat ikki jamoa topgan" },
-  oltin: { name: "Oltin", rank: 3, note: "savolni uch jamoa topgan" },
-  kumush: { name: "Kumush", rank: 2, note: "savolni jamoalarning yarmigacha topgan" },
   bronza: { name: "Bronza", rank: 1, note: "savolni hamma jamoa topgan" },
 };
 function medalTier(s, n) {
@@ -771,8 +744,6 @@ function medalTier(s, n) {
   if (s === n) return "bronza";
   if (s === 1) return "takrorlanmas";
   if (s === 2) return "afsonaviy";
-  if (s === 3) return "oltin";
-  if (s / n <= 0.5) return "kumush";
   return null;
 }
 function questionStats(t) {
@@ -783,7 +754,7 @@ function questionStats(t) {
     return { q, n, solvers, tier: medalTier(solvers.length, n) };
   });
 }
-// Jamoa inventari: takrorlanmas/afsonaviy/oltin — har biri alohida; kumush/bronza — tur bo'yicha bitta medalga yig'iladi
+// Jamoa inventari: takrorlanmas/afsonaviy — har biri alohida; bronza — tur bo'yicha bitta medalga yig'iladi
 function teamMedals(teamId) {
   const out = [];
   for (const t of listTours()) {
@@ -798,10 +769,9 @@ function teamMedals(teamId) {
   }
   return out.sort((a, b) => MEDALS[b.tier].rank - MEDALS[a.tier].rank || a.tour.id - b.tour.id || a.qs[0] - b.qs[0]);
 }
-// Dumaloq medal: yozuvsiz, o'yilgan naqsh. Nima uchun berilgani faqat orqa tomonda.
-const MEDAL_EMBLEM = `<svg class="medal-emblem" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".55"/><path d="M50 22 55.2 41.6 74.8 36.6 60.4 50 74.8 63.4 55.2 58.4 50 78 44.8 58.4 25.2 63.4 39.6 50 25.2 36.6 44.8 41.6Z" fill="currentColor"/><circle cx="50" cy="50" r="5" fill="currentColor" opacity=".55"/></svg>`;
+// Dumaloq medal: yozuvsiz va naqshsiz, minimal. Nima uchun berilgani faqat orqa tomonda.
 function medalFace(m, size = "") {
-  return `<span class="medal-art ${m.tier}${size}"><span class="medal-disc ${m.tier}"><span class="medal-ring"></span>${size === " xs" ? "" : MEDAL_EMBLEM}</span></span>`;
+  return `<span class="medal-art ${m.tier}${size}"><span class="medal-disc ${m.tier}"><span class="medal-ring"></span></span></span>`;
 }
 const medalQText = (m) => (m.qs.length > 1 ? `${m.qs.join(", ")}-savollar` : `${m.qs[0]}-savol`);
 const medalWho = (m) => (m.s === 1 ? "Faqat shu jamoa topgan" : m.s === m.n ? `Turdagi barcha ${m.n} jamoa topgan` : `${m.n} jamoadan ${m.s} tasi topgan`);
@@ -873,7 +843,7 @@ function questionsPage() {
 <div class="tabstrip qtabs">${pub.map((x) => `<button class="tabchip ${x.id === t.id ? "active" : ""}" onclick="go('questions', ${x.id})">${h(x.title)}</button>`).join("")}</div>
 <section class="glass pad"><div class="row between" style="gap:12px;flex-wrap:wrap"><h2 class="h2">${h(t.title)}: 36 savol, ${n} jamoa</h2><div class="medal-legend">${Object.entries(MEDALS).map(([k, m]) => `<span title="${m.note}">${medalFace({ tier: k, qs: [""] }, " xs")}${m.name}</span>`).join("")}</div></div><div class="qstrip">${strip}</div><p class="notice">Rangli katak — medal berilgan savol. Oq katak — ko‘pchilik topgan (pastki chiziq qancha qalin bo‘lsa, shuncha ko‘p), shtrixli — hech kim topmagan.</p></section>
 <div class="qcols">
-<section class="glass pad"><h2 class="h2">Kam topilgan savollar <span class="count">${rare.length}</span></h2><p class="notice">Faqat 1–3 jamoa topgan savollar: Takrorlanmas, Afsonaviy va Oltin medallar shular uchun beriladi.</p>${
+<section class="glass pad"><h2 class="h2">Kam topilgan savollar <span class="count">${rare.length}</span></h2><p class="notice">Faqat 1 yoki 2 jamoa topgan savollar: Takrorlanmas va Afsonaviy medallar shular uchun beriladi.</p>${
     rare.length
       ? rare
           .sort((a, b) => a.solvers.length - b.solvers.length || a.q - b.q)
