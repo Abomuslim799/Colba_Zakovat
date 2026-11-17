@@ -30,6 +30,8 @@ Biror o'zgaruvchi yetishmasa, server ishga tushmaydi va Deploy Logs'da sababini 
 - **Administrator** — ega "Boshqaruv → Foydalanuvchi ma'lumotlari"da tayinlaydi. Jamoalarni tasdiqlash/rad etish, tur ishtirokchilari, javoblarni kiritish, natijalarni e'lon qilish, apellyatsiyalarni ko'rib chiqish.
 - **Foydalanuvchi** — saytda "Ro'yxatdan o'tish" orqali (ism, email, parol). Sahifalarni ko'radi, jamoa arizasini yuboradi, o'z jamoasi bo'yicha apellyatsiya beradi.
 
+**Foydalanuvchilar** bo'limi (admin va ega): ism, email yoki jamoa nomi bo'yicha qidiruv, rol bo'yicha filtr, keraksiz foydalanuvchini o'chirish. Admin faqat oddiy foydalanuvchini o'chiradi, adminni faqat ega o'chiradi; tasdiqlangan jamoasi bor foydalanuvchini o'chirishdan oldin jamoa o'chiriladi, kutilayotgan arizasi esa avtomatik bekor bo'ladi.
+
 Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yangi parol o'rnatadi (foydalanuvchining eski sessiyalari yopiladi).
 
 ## Jarayon

@@ -519,23 +519,23 @@ function adminPage() {
     ["participation", "Tur jamoalari"],
     ["teamsadmin", "Jamoalar"],
     ["appealsadmin", "Apellyatsiyalar"],
+    ["users", "Foydalanuvchilar"],
   ];
   if (state.role === "owner")
     items.push(
       ["site", "Asosiy oyna"],
       ["tours", "Turlar sozlamasi"],
       ["settings", "Huquq va sozlamalar"],
-      ["users", "Foydalanuvchi ma’lumotlari"],
       ["monitoring", "Monitoring"],
     );
-  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" && state.role === "owner" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
+  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
 }
 window.adminTab = async (k) => {
   state.adminTab = k;
   state.message = "";
   state.error = "";
   if (k === "monitoring" && state.role === "owner") return loadMonitoring();
-  if (k === "users" && state.role === "owner") {
+  if (k === "users") {
     try {
       userList = (await api("/api/users")).users;
     } catch (e) {
@@ -807,9 +807,70 @@ window.downloadJSON = () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(u), 1000);
 };
-function usersAdmin() {
-  return `<div class="card pad"><div class="row between"><h2 style="margin:0">Foydalanuvchi ma’lumotlari</h2><span class="tag">Faqat sayt egasi</span></div><p class="notice">Ro‘yxatdan o‘tgan foydalanuvchilar. Parolni unutgan foydalanuvchiga “Parol” tugmasi orqali yangi parol o‘rnating.</p><div class="tablewrap"><table class="datatable"><thead><tr><th>№</th><th>Foydalanuvchi</th><th>Email</th><th>Huquq</th><th>Oxirgi kirish</th><th>Sozlash</th><th>Parol</th></tr></thead><tbody>${userList.map((u, i) => `<tr><td>${i + 1}</td><td>${h(u.name)}</td><td>${h(u.email)}</td><td>${u.role === "owner" ? "Sayt egasi" : u.role === "admin" ? "Admin" : "Foydalanuvchi"}</td><td>${new Date(u.last_seen).toLocaleString("uz-UZ")}</td><td>${u.role === "owner" ? "—" : `<select class="field" onchange="changeUserRole('${u.id}',this.value)"><option value="user" ${u.role === "user" ? "selected" : ""}>Foydalanuvchi</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option></select>`}</td><td>${u.role === "owner" ? "—" : `<button class="smallbtn pill" onclick="resetPassword('${u.id}')">Parol</button>`}</td></tr>`).join("")}</tbody></table></div></div>`;
+let userSearch = "",
+  userRoleFilter = "all";
+const roleName = (r) => (r === "owner" ? "Sayt egasi" : r === "admin" ? "Admin" : "Foydalanuvchi");
+function userTeam(u) {
+  return data.teams.find((t) => t.createdBy === u.id && (t.status === "approved" || t.status === "pending"));
 }
+function filteredUsers() {
+  const q = userSearch.trim().toLocaleLowerCase("uz");
+  return userList.filter((u) => {
+    if (userRoleFilter !== "all" && u.role !== userRoleFilter) return false;
+    if (!q) return true;
+    const tm = userTeam(u);
+    return [u.name, u.email, tm?.name].some((v) => String(v || "").toLocaleLowerCase("uz").includes(q));
+  });
+}
+function userRows() {
+  const list = filteredUsers();
+  const canDelete = (u) =>
+    u.role !== "owner" && u.id !== currentUser?.id && (u.role === "user" || isOwner());
+  return (
+    list
+      .map((u, i) => {
+        const tm = userTeam(u);
+        return `<tr><td>${i + 1}</td><td><strong>${h(u.name)}</strong></td><td>${h(u.email)}</td><td>${tm ? `${h(tm.name)}${tm.status === "pending" ? ' <span class="muted">(ariza)</span>' : ""}` : '<span class="muted">—</span>'}</td><td>${
+          isOwner() && u.role !== "owner"
+            ? `<select class="field" style="min-width:130px" onchange="changeUserRole('${u.id}',this.value)"><option value="user" ${u.role === "user" ? "selected" : ""}>Foydalanuvchi</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option></select>`
+            : roleName(u.role)
+        }</td><td style="white-space:nowrap">${fmtDate(u.last_seen)}</td><td style="white-space:nowrap">${isOwner() && u.role !== "owner" ? `<button class="smallbtn pill" onclick="resetPassword('${u.id}')">Parol</button> ` : ""}${canDelete(u) ? `<button class="smallbtn danger" onclick="deleteUser('${u.id}')">O‘chirish</button>` : ""}</td></tr>`;
+      })
+      .join("") || '<tr><td colspan="7" class="empty">Hech kim topilmadi.</td></tr>'
+  );
+}
+function refreshUserRows() {
+  const body = $("usersBody");
+  if (body) body.innerHTML = userRows();
+  const c = $("usersCount");
+  if (c) c.textContent = `${filteredUsers().length} / ${userList.length}`;
+}
+window.searchUsers = (v) => {
+  userSearch = v;
+  refreshUserRows();
+};
+window.filterUsersRole = (v) => {
+  userRoleFilter = v;
+  refreshUserRows();
+};
+function usersAdmin() {
+  const counts = { all: userList.length, user: 0, admin: 0, owner: 0 };
+  userList.forEach((u) => counts[u.role]++);
+  return `<div class="card pad"><div class="row between"><h2 style="margin:0">Foydalanuvchilar</h2><span class="tag" id="usersCount">${filteredUsers().length} / ${userList.length}</span></div><p class="notice">Ism, email yoki jamoa nomi bo‘yicha qidiring. ${isOwner() ? "Rol va parolni faqat sayt egasi o‘zgartiradi." : "Admin faqat oddiy foydalanuvchini o‘chira oladi."} Faol jamoasi bor foydalanuvchini o‘chirishdan oldin jamoani o‘chiring.</p><div class="row" style="gap:10px;margin:12px 0;flex-wrap:wrap"><input class="field" style="flex:1;min-width:220px" type="search" placeholder="🔍 Ism, email yoki jamoa…" value="${h(userSearch)}" oninput="searchUsers(this.value)"><select class="field" style="width:auto" onchange="filterUsersRole(this.value)">${[["all", "Hammasi"], ["user", "Foydalanuvchilar"], ["admin", "Adminlar"], ["owner", "Sayt egasi"]].map(([k, l]) => `<option value="${k}" ${userRoleFilter === k ? "selected" : ""}>${l} (${counts[k]})</option>`).join("")}</select></div><div class="tablewrap"><table class="datatable"><thead><tr><th>№</th><th>Ism</th><th>Email</th><th>Jamoasi</th><th>Huquq</th><th>Oxirgi kirish</th><th></th></tr></thead><tbody id="usersBody">${userRows()}</tbody></table></div></div>`;
+}
+window.deleteUser = async (id) => {
+  const u = userList.find((x) => x.id === id);
+  if (!u || !confirm(`“${u.name}” (${u.email}) foydalanuvchisini o‘chirasizmi?\n\nU tizimdan chiqariladi va shu email bilan qayta ro‘yxatdan o‘tishi kerak bo‘ladi. Bu amalni qaytarib bo‘lmaydi.`))
+    return;
+  try {
+    const z = await api("/api/users/" + encodeURIComponent(id) + "/delete", {});
+    userList = (await api("/api/users")).users;
+    await reload();
+    flash(z.message);
+  } catch (e) {
+    flash(e.message, true);
+  }
+};
 window.changeUserRole = async (id, role) => {
   try {
     await api("/api/users/" + encodeURIComponent(id) + "/role", { role });

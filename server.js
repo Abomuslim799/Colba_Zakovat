@@ -535,7 +535,7 @@ app.get('/api/monitoring', requires('owner'), async (req, res, next) => {
 });
 
 // ---------- API: foydalanuvchilar (faqat ega) ----------
-app.get('/api/users', requires('owner'), async (req, res, next) => {
+app.get('/api/users', requires('staff'), async (req, res, next) => {
   try {
     const { rows } = await pool.query(`SELECT ${USER_FIELDS} FROM app_users ORDER BY last_seen DESC LIMIT 3000`);
     res.json({ users: rows });
@@ -552,6 +552,42 @@ app.post('/api/users/:id/role', requires('owner'), async (req, res, next) => {
       [req.user.id, 'userRole', JSON.stringify({ target: req.params.id, role })]);
     res.json({ ok: true });
   } catch (e) { next(e); }
+});
+
+// Foydalanuvchini o'chirish: ega — istalgan (o'zidan tashqari), admin — faqat oddiy foydalanuvchini.
+// Tasdiqlangan jamoasi bo'lsa avval jamoa o'chiriladi yoki faoliyati tugatiladi; kutilayotgan arizasi bekor qilinadi.
+app.post('/api/users/:id/delete', requires('staff'), async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(`SELECT ${USER_FIELDS} FROM app_users WHERE id = $1 FOR UPDATE`, [req.params.id]);
+    const target = rows[0];
+    if (!target) bad('Foydalanuvchi topilmadi', 404);
+    if (target.id === req.user.id) bad('O‘zingizni o‘chira olmaysiz');
+    if (target.role === 'owner') bad('Sayt egasini o‘chirib bo‘lmaydi', 403);
+    if (target.role === 'admin' && req.user.role !== 'owner') bad('Adminni faqat sayt egasi o‘chiradi', 403);
+    const st = await client.query('SELECT data FROM app_state WHERE id = 1 FOR UPDATE');
+    const s = migrate(st.rows[0].data);
+    const approved = s.teams.find((t) => t.createdBy === target.id && t.status === 'approved');
+    if (approved) bad(`Foydalanuvchining “${approved.name}” jamoasi faol. Avval “Jamoalar” bo‘limida jamoani o‘chiring.`);
+    const pending = s.teams.filter((t) => t.createdBy === target.id && t.status === 'pending');
+    if (pending.length) {
+      s.teams = s.teams.filter((t) => !pending.includes(t));
+      await client.query('UPDATE app_state SET data = $1, version = version + 1 WHERE id = 1', [JSON.stringify(s)]);
+    }
+    await client.query(`DELETE FROM session WHERE sess ->> 'uid' = $1`, [target.id]);
+    await client.query('DELETE FROM app_users WHERE id = $1', [target.id]);
+    await client.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
+      [req.user.id, 'userDelete', JSON.stringify({ target: target.id, name: target.name, email: target.email })]);
+    await client.query('COMMIT');
+    res.json({ ok: true, message: `“${target.name}” o‘chirildi${pending.length ? ' (kutilayotgan arizasi bekor qilindi)' : ''}` });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (!e.status) return next(e);
+    res.status(e.status).json({ error: e.message });
+  } finally {
+    client.release();
+  }
 });
 
 app.post('/api/users/:id/password', requires('owner'), async (req, res, next) => {
