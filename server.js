@@ -43,6 +43,13 @@ const MAX_TOURS = 36;
 const APPEAL = { SENT: 'Yuborildi', REVIEW: 'Ko‘rib chiqilmoqda', DONE: 'Ko‘rib chiqildi' };
 const APPEAL_STATUSES = Object.values(APPEAL);
 const DEFAULT_WORD_LIMIT = 100;
+const SUPPORT_CATEGORIES = {
+  participation: 'Turda qatnashganimiz belgilanmagan',
+  result: 'Natija yoki hisobda xato',
+  team: 'Jamoa va ro‘yxatdan o‘tish',
+  site: 'Saytdagi texnik xato',
+  other: 'Boshqa',
+};
 const countWords = (text) => String(text || '').trim().split(/\s+/).filter(Boolean).length;
 
 // ---------- Ma'lumotlar bazasi ----------
@@ -55,11 +62,13 @@ const seed = () => ({
   appealEnabled: false,
   appealWordLimit: DEFAULT_WORD_LIMIT,
   appeals: [],
+  support: [],
 });
 
 // Eski ma'lumotlarni yangi tuzilishga keltirish (har ishga tushishda xavfsiz)
 function migrate(s) {
   s.appealWordLimit ??= DEFAULT_WORD_LIMIT;
+  s.support ??= [];
   for (const a of s.appeals || []) {
     if (a.status === 'Yangi') a.status = APPEAL.SENT;
     else if (a.status === 'Rad etildi') a.status = APPEAL.DONE;
@@ -191,6 +200,9 @@ function safeState(src, user) {
       delete t.responses; delete t.activeTeams;
     }
   }
+  s.support = (s.support || [])
+    .filter((x) => x.userId === user.id)
+    .map(({ userId, userEmail, answeredBy, ...x }) => x);
   s.appeals = s.appeals
     .filter((a) => a.userId === user.id || myIds.has(a.teamId))
     .map(({ userId, answeredBy, ...a }) => a);
@@ -482,6 +494,31 @@ app.post('/api/action', requires('staff'), (req, res) => {
         a.updated = Date.now();
         return payload.status === APPEAL.DONE ? 'Javob yuborildi' : 'Apellyatsiya yangilandi';
       }
+      case 'appealFix': {
+        // Apellyatsiya qabul qilinsa: shu jamoaning shu savoldagi javobini almashtirish (e'lon qilingan turda ham)
+        const a = s.appeals.find((x) => x.id === payload.id);
+        if (!a) bad('Apellyatsiya topilmadi');
+        const at = s.tours.find((x) => x.id === a.tourId);
+        if (!at || !at.activeTeams.includes(a.teamId)) bad('Jamoa bu turda qatnashmagan');
+        const q = a.question - 1;
+        at.responses[a.teamId] ??= {};
+        const value = at.responses[a.teamId][q] === 1 ? 0 : 1;
+        at.responses[a.teamId][q] = value;
+        (a.fixes ??= []).push({ by: req.user.name, at: Date.now(), value });
+        return `${a.question}-savol javobi “${value ? '+' : '−'}” ga o‘zgartirildi${at.published ? '. Tur natijasi va reyting qayta hisoblandi' : ''}`;
+      }
+      case 'supportStatus': {
+        const x = (s.support || []).find((y) => y.id === payload.id);
+        if (!x) bad('Murojaat topilmadi');
+        if (!APPEAL_STATUSES.includes(payload.status)) bad('Status noto‘g‘ri');
+        const answer = String(payload.answer ?? x.answer ?? '').trim();
+        if (answer.length > 3000) bad('Javob 3000 belgidan oshmasin');
+        if (payload.status === APPEAL.DONE && answer.length < 2) bad('“Ko‘rib chiqildi” deyishdan oldin javob yozing');
+        x.status = payload.status;
+        if (answer !== (x.answer || '')) { x.answer = answer; x.answeredBy = req.user.name; x.answeredAt = Date.now(); }
+        x.updated = Date.now();
+        return payload.status === APPEAL.DONE ? 'Javob yuborildi' : 'Murojaat yangilandi';
+      }
       case 'appealWordLimit': {
         const n = Number(payload.limit);
         if (!Number.isInteger(n) || n < 10 || n > 1000) bad('So‘z chegarasi 10–1000 oralig‘ida bo‘lsin');
@@ -511,8 +548,9 @@ app.post('/api/appeal', requires('user'), (req, res) => {
     const message = String(req.body.message || '').trim();
     const words = countWords(message);
     if (!tm || tm.createdBy !== req.user.id) bad('Apellyatsiyani faqat jamoani ro‘yxatdan o‘tkazgan sardor yuboradi', 403);
-    if (!t || t.published) bad('Bu tur natijalari allaqachon tasdiqlangan');
-    if (!t.activeTeams.includes(tm.id)) bad('Jamoangiz bu turda qatnashmagan');
+    if (!t) bad('Tur topilmadi');
+    if (!t.activeTeams.includes(tm.id))
+      bad('Jamoangiz bu turda qatnashgani belgilanmagan. Qatnashgan bo‘lsangiz, “Yordam” bo‘limiga yozing.');
     if (!Number.isInteger(q) || q < 1 || q > QUESTIONS) bad(`Savol raqami 1–${QUESTIONS} bo‘lishi kerak`);
     if (words < 3) bad('E’tirozni kamida 3 so‘z bilan yozing');
     if (words > s.appealWordLimit) bad(`Matn ${s.appealWordLimit} so‘zdan oshmasin (hozir ${words} so‘z)`);
@@ -523,6 +561,29 @@ app.post('/api/appeal', requires('user'), (req, res) => {
       status: APPEAL.SENT, userId: req.user.id, created: Date.now(),
     });
     return 'Apellyatsiya yuborildi. Holatini shu sahifada kuzatib borasiz.';
+  });
+});
+
+// ---------- API: yordam (texnik muammo va boshqa murojaatlar) ----------
+app.post('/api/support', requires('user'), (req, res) => {
+  update(req, res, 'support', { category: req.body.category }, (s) => {
+    const category = String(req.body.category || '');
+    const message = String(req.body.message || '').trim();
+    const tourId = req.body.tourId ? Number(req.body.tourId) : null;
+    if (!SUPPORT_CATEGORIES[category]) bad('Murojaat turini tanlang');
+    if (message.length < 10) bad('Muammoni kamida 10 belgi bilan tushuntiring');
+    if (message.length > 1500) bad('Matn 1500 belgidan oshmasin');
+    if (tourId && !s.tours.some((t) => t.id === tourId)) bad('Tur topilmadi');
+    s.support ??= [];
+    const open = s.support.filter((x) => x.userId === req.user.id && x.status !== APPEAL.DONE).length;
+    if (open >= 5) bad('Sizda 5 ta javob kutilayotgan murojaat bor. Avval ularga javob berilishini kuting.');
+    const team = s.teams.find((t) => t.createdBy === req.user.id && ACTIVE_STATUSES.includes(t.status));
+    s.support.push({
+      id: crypto.randomUUID(), category, tourId, message, teamId: team?.id || null,
+      userId: req.user.id, userName: req.user.name, userEmail: req.user.email,
+      status: APPEAL.SENT, created: Date.now(),
+    });
+    return 'Murojaatingiz yuborildi. Javobni shu sahifada ko‘rasiz.';
   });
 });
 

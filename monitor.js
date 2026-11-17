@@ -241,6 +241,7 @@ async function report(p, rangeKey, state) {
       failedLogins: act.login_failed?.n || 0, registrations: act.register?.n || 0,
       teams: count(state.teams || [], 'status'),
       appeals: count(state.appeals || [], 'status'),
+      support: count(state.support || [], 'status'),
       tours: { total: (state.tours || []).length, published: (state.tours || []).filter((t) => t.published).length },
     },
     errors, slow, lifecycle,

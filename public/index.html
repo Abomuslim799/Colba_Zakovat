@@ -112,6 +112,7 @@ function normalize() {
   data.appeals ??= [];
   data.appealEnabled ??= false;
   data.appealWordLimit ??= 100;
+  data.support ??= [];
   data.tours.forEach((t) => {
     t.responses ??= {};
     t.activeTeams ??= [];
@@ -178,6 +179,7 @@ function nav() {
     ["results", "Tur natijalari"],
   ];
   if (data.appealEnabled) links.push(["appeals", "Apellyatsiya"]);
+  links.push(["support", "Yordam"]);
   return links
     .map(
       ([p, n]) =>
@@ -449,26 +451,26 @@ function appealsPage() {
   if (!data.appealEnabled)
     return '<div class="empty">Apellyatsiya bo‘limi hozircha faol emas.</div>';
   const myTeam = myTeams().find((t) => t.approved);
-  // Oddiy foydalanuvchiga server "myTeamPlays" beradi; admin/ega to'liq ma'lumotni oladi
-  const tours = listTours().filter(
-    (t) => !t.published && myTeam && (t.myTeamPlays || (t.activeTeams || []).includes(myTeam.id)),
-  );
+  // Jamoa qatnashgan turlar: e'lon qilinmaganida server "myTeamPlays" beradi, e'lon qilinganida activeTeams ochiq
+  const tours = myTeam ? listTours().filter((t) => t.myTeamPlays || (t.activeTeams || []).includes(myTeam.id)) : [];
   const limit = data.appealWordLimit;
   const mine = data.appeals.slice().sort((a, b) => (b.created || 0) - (a.created || 0));
   let form;
   if (!myTeam)
     form = '<p class="note">Apellyatsiyani tasdiqlangan jamoani ro‘yxatdan o‘tkazgan sardor yuboradi. Sizda tasdiqlangan jamoa yo‘q.</p>';
   else if (!tours.length)
-    form = `<p class="note">“${h(myTeam.name)}” jamoasi hozir natijasi e’lon qilinmagan turda qatnashmayapti. Apellyatsiya tur natijalari e’lon qilinguncha beriladi.</p>`;
+    form = `<p class="note">“${h(myTeam.name)}” jamoasi hali hech bir turda qatnashgani belgilanmagan. Qatnashgan bo‘lsangiz, bu xato — “Yordam” bo‘limiga yozing.</p><button class="pill" onclick="go('support')">Yordam bo‘limiga o‘tish →</button>`;
   else
-    form = `<form onsubmit="sendAppeal(event)"><div class="fieldgroup"><label>Jamoa</label><div class="field" style="background:#f6f9f7"><strong>${h(myTeam.name)}</strong></div><input type="hidden" id="appealTeam" value="${myTeam.id}"></div><div class="gridfields"><div class="fieldgroup"><label>Tur *</label><select class="field" id="appealTour" required>${tours
-      .map((t) => `<option value="${t.id}">${h(t.title)}</option>`)
-      .join("")}</select></div><div class="fieldgroup"><label>Savol raqami *</label><select class="field" id="appealQuestion" required><option value="">— Tanlang —</option>${Array.from(
+    form = `<form onsubmit="sendAppeal(event)"><div class="fieldgroup"><label>Jamoa</label><div class="field" style="background:#f6f9f7"><strong>${h(myTeam.name)}</strong></div><input type="hidden" id="appealTeam" value="${myTeam.id}"></div><div class="gridfields"><div class="fieldgroup"><label>Tur *</label><select class="field" id="appealTour" required onchange="appealAnswerInfo()">${tours
+      .slice()
+      .reverse()
+      .map((t) => `<option value="${t.id}">${h(t.title)}${t.published ? " · natija e’lon qilingan" : " · natija hali e’lon qilinmagan"}</option>`)
+      .join("")}</select></div><div class="fieldgroup"><label>Savol raqami *</label><select class="field" id="appealQuestion" required onchange="appealAnswerInfo()"><option value="">— Tanlang —</option>${Array.from(
       { length: 36 },
       (_, i) =>
         `<option value="${i + 1}">${i + 1}-savol (${Math.floor(i / 12) + 1}-raund)</option>`,
-    ).join("")}</select></div></div><div class="fieldgroup"><label>E’tiroz matni * <span class="muted" style="font-weight:400">— qisqa va aniq, ${limit} so‘zgacha</span></label><textarea class="field" id="appealText" rows="5" required oninput="countAppealWords()" placeholder="Masalan: Javobimiz “…” deb yozilgan. Savol shartiga ko‘ra bu javob ham to‘g‘ri, chunki …"></textarea><div class="row between" style="margin-top:6px"><span class="notice">Faqat yozma e’tiroz qabul qilinadi.</span><strong id="appealWords" class="notice">0 / ${limit} so‘z</strong></div></div><button class="primary" id="appealSubmit" disabled>Apellyatsiya yuborish</button></form>`;
-  return `<div class="pagehead"><h1>Apellyatsiya</h1><p>Tur natijalari e’lon qilinguncha jamoa sardori e’tiroz yuboradi. Holati: Yuborildi → Ko‘rib chiqilmoqda → Ko‘rib chiqildi.</p></div><div class="grid2" style="align-items:start"><div class="card pad">${msgs()}<h2 style="margin-top:0">Yangi apellyatsiya</h2>${form}</div><div class="card pad"><h2 style="margin-top:0">Mening apellyatsiyalarim (${mine.length})</h2>${
+    ).join("")}</select></div></div><p class="notice" id="appealAnswer" style="margin:-4px 0 12px"></p><p class="notice" style="margin:-6px 0 12px">Ro‘yxatda jamoangiz qatnashgan tur yo‘q bo‘lsa — “Yordam” bo‘limiga yozing.</p><div class="fieldgroup"><label>E’tiroz matni * <span class="muted" style="font-weight:400">— qisqa va aniq, ${limit} so‘zgacha</span></label><textarea class="field" id="appealText" rows="5" required oninput="countAppealWords()" placeholder="Masalan: Javobimiz “…” deb yozilgan. Savol shartiga ko‘ra bu javob ham to‘g‘ri, chunki …"></textarea><div class="row between" style="margin-top:6px"><span class="notice">Faqat yozma e’tiroz qabul qilinadi.</span><strong id="appealWords" class="notice">0 / ${limit} so‘z</strong></div></div><button class="primary" id="appealSubmit" disabled>Apellyatsiya yuborish</button></form>`;
+  return `<div class="pagehead"><h1>Apellyatsiya</h1><p>Jamoa sardori o‘z jamoasi qatnashgan tur bo‘yicha yozma e’tiroz yuboradi. Holati: Yuborildi → Ko‘rib chiqilmoqda → Ko‘rib chiqildi.</p></div><div class="grid2" style="align-items:start"><div class="card pad">${msgs()}<h2 style="margin-top:0">Yangi apellyatsiya</h2>${form}</div><div class="card pad"><h2 style="margin-top:0">Mening apellyatsiyalarim (${mine.length})</h2>${
     mine
       .map(
         (a) =>
@@ -477,6 +479,17 @@ function appealsPage() {
       .join("") || '<div class="empty">Hali apellyatsiya yubormagansiz.</div>'
   }</div></div>`;
 }
+window.appealAnswerInfo = () => {
+  const el = $("appealAnswer"),
+    t = tour($("appealTour")?.value),
+    q = Number($("appealQuestion")?.value),
+    tm = myTeams().find((x) => x.approved);
+  if (!el) return;
+  if (!t || !q) return (el.textContent = "");
+  if (!t.published || !t.responses) return (el.textContent = `${t.title} natijasi hali e’lon qilinmagan.`);
+  const yes = (t.responses[tm?.id] || {})[q - 1] === 1;
+  el.innerHTML = `Jadvalda ${q}-savol uchun jamoangizga: <strong style="color:${yes ? "var(--green)" : "var(--red)"}">${yes ? "+ (to‘g‘ri)" : "− (noto‘g‘ri)"}</strong>`;
+};
 window.countAppealWords = () => {
   const n = wordCount($("appealText").value),
     lim = data.appealWordLimit,
@@ -503,6 +516,78 @@ window.sendAppeal = async (e) => {
     flash(err.message, true);
   }
 };
+const SUPPORT_CATEGORIES = {
+  participation: "Turda qatnashganimiz belgilanmagan",
+  result: "Natija yoki hisobda xato",
+  team: "Jamoa va ro‘yxatdan o‘tish",
+  site: "Saytdagi texnik xato",
+  other: "Boshqa",
+};
+function supportPage() {
+  const mine = data.support.slice().sort((a, b) => (b.created || 0) - (a.created || 0));
+  return `<div class="pagehead"><h1>Yordam</h1><p>Saytdagi xato, natija yoki turda qatnashish bilan bog‘liq muammo haqida yozing — admin ko‘rib chiqib javob beradi. Savol bo‘yicha e’tiroz uchun “Apellyatsiya” bo‘limidan foydalaning.</p></div><div class="grid2" style="align-items:start"><div class="card pad">${msgs()}<h2 style="margin-top:0">Yangi murojaat</h2><form onsubmit="sendSupport(event)"><div class="fieldgroup"><label>Muammo turi *</label><select class="field" id="supCategory" required><option value="">— Tanlang —</option>${Object.entries(SUPPORT_CATEGORIES).map(([k, l]) => `<option value="${k}">${h(l)}</option>`).join("")}</select></div><div class="fieldgroup"><label>Tur (agar tegishli bo‘lsa)</label><select class="field" id="supTour"><option value="">— Turga bog‘liq emas —</option>${listTours().map((t) => `<option value="${t.id}">${h(t.title)}</option>`).join("")}</select></div><div class="fieldgroup"><label>Muammoni tushuntiring *</label><textarea class="field" id="supText" rows="5" maxlength="1500" required oninput="$('supCount').textContent=this.value.length+' / 1500'" placeholder="Masalan: 2-turda qatnashganmiz, lekin natijalar jadvalida jamoamiz yo‘q."></textarea><div class="notice" style="text-align:right" id="supCount">0 / 1500</div></div><button class="primary" id="supSubmit">Murojaat yuborish</button></form></div><div class="card pad"><h2 style="margin-top:0">Mening murojaatlarim (${mine.length})</h2>${
+    mine
+      .map(
+        (x) =>
+          `<article class="news"><div class="row between"><strong>${h(SUPPORT_CATEGORIES[x.category] || x.category)}${x.tourId ? " · " + h(tour(x.tourId)?.title || "") : ""}</strong>${appealBadge(x.status)}</div>${appealSteps(x.status)}<p style="margin:6px 0;white-space:pre-wrap">${h(x.message)}</p><small class="muted">Yuborilgan: ${fmtDate(x.created)}</small>${x.answer ? `<div class="note" style="margin-top:8px"><strong>Admin javobi:</strong><br>${h(x.answer)}<br><small class="muted">${fmtDate(x.answeredAt)}</small></div>` : ""}</article>`,
+      )
+      .join("") || '<div class="empty">Hali murojaat yubormagansiz.</div>'
+  }</div></div>`;
+}
+window.sendSupport = async (e) => {
+  e.preventDefault();
+  $("supSubmit").disabled = true;
+  try {
+    const z = await api("/api/support", {
+      category: $("supCategory").value,
+      tourId: $("supTour").value ? Number($("supTour").value) : null,
+      message: $("supText").value.trim(),
+    });
+    data = z.data;
+    normalize();
+    flash(z.message);
+  } catch (err) {
+    flash(err.message, true);
+  }
+};
+let supportFilter = "open";
+const openSupport = new Set();
+function supportAdmin() {
+  const all = data.support.slice().sort((a, b) => (b.created || 0) - (a.created || 0));
+  const counts = {
+    open: all.filter((a) => a.status !== APPEAL_DONE).length,
+    [APPEAL_SENT]: all.filter((a) => a.status === APPEAL_SENT).length,
+    [APPEAL_REVIEW]: all.filter((a) => a.status === APPEAL_REVIEW).length,
+    [APPEAL_DONE]: all.filter((a) => a.status === APPEAL_DONE).length,
+    all: all.length,
+  };
+  const filters = [["open", "Ochiq"], [APPEAL_SENT, "Yangi"], [APPEAL_REVIEW, "Ko‘rib chiqilmoqda"], [APPEAL_DONE, "Hal qilingan"], ["all", "Hammasi"]];
+  const list = all.filter((a) => (supportFilter === "all" ? true : supportFilter === "open" ? a.status !== APPEAL_DONE : a.status === supportFilter));
+  const card = (x) => {
+    const open = openSupport.has(x.id);
+    return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer;gap:10px" onclick="toggleSupport('${x.id}')"><div><strong>${h(SUPPORT_CATEGORIES[x.category] || x.category)}</strong>${x.tourId ? " · " + h(tour(x.tourId)?.title || "") : ""}<div class="notice">${h(x.userName || "")}${x.teamId && team(x.teamId) ? " · " + h(team(x.teamId).name) : ""} · ${fmtDate(x.created)}</div></div><div class="row" style="gap:8px">${appealBadge(x.status)}<span class="muted">${open ? "▴" : "▾"}</span></div></div>${
+      open
+        ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><p style="white-space:pre-wrap;margin-top:0">${h(x.message)}</p><p class="notice">Yuborgan: ${h(x.userName || "—")}${x.userEmail ? " · " + h(x.userEmail) : ""}</p><div class="fieldgroup"><label>Javob (foydalanuvchiga ko‘rinadi)</label><textarea class="field" id="sanswer_${x.id}" rows="3" maxlength="3000">${h(x.answer || "")}</textarea></div><div class="row" style="gap:8px;flex-wrap:wrap">${x.status === APPEAL_SENT ? `<button class="smallbtn soft" onclick="supportStatus('${x.id}','${APPEAL_REVIEW}')">Ko‘rib chiqishga olish</button>` : ""}<button class="primary" onclick="supportStatus('${x.id}','${APPEAL_DONE}')">✓ Javob yuborish (Ko‘rib chiqildi)</button>${x.status === APPEAL_DONE ? `<button class="smallbtn pill" onclick="supportStatus('${x.id}','${APPEAL_REVIEW}')">Qayta ochish</button>` : ""}</div></div>`
+        : ""
+    }</div>`;
+  };
+  return `<div class="card pad"><h2 style="margin-top:0">Yordam murojaatlari</h2><p class="notice">Foydalanuvchilar yozgan texnik va tashkiliy muammolar. Masalan, jamoa turda qatnashgani belgilanmagan bo‘lsa — “Tur jamoalari”da belgilang, keyin javob yozing.</p><div class="tabstrip" style="margin-bottom:14px">${filters.map(([k, l]) => `<button class="tabchip ${supportFilter === k ? "active" : ""}" onclick="setSupportFilter('${k}')">${l} (${counts[k]})</button>`).join("")}</div>${list.map(card).join("") || '<div class="empty">Bu bo‘limda murojaat yo‘q.</div>'}</div>`;
+}
+window.setSupportFilter = (k) => {
+  supportFilter = k;
+  draw();
+};
+window.toggleSupport = (id) => {
+  openSupport.has(id) ? openSupport.delete(id) : openSupport.add(id);
+  draw();
+};
+window.supportStatus = async (id, status) => {
+  const answer = $("sanswer_" + id)?.value ?? undefined;
+  if (await mutate("supportStatus", { id, status, answer })) {
+    if (status === APPEAL_DONE) openSupport.delete(id);
+    flash(status === APPEAL_DONE ? "Javob yuborildi" : "Holat yangilandi");
+  }
+};
 function loginPage() {
   const reg = authMode === "register";
   return `<div class="authwrap card pad" style="max-width:440px;margin:60px auto"><div style="text-align:center"><div style="font-size:42px;margin-bottom:8px">🧠</div><h1 style="margin:0 0 6px">COLBA Zakovat ligasi</h1><p class="muted">Saytdan foydalanish uchun kiring yoki ro‘yxatdan o‘ting.</p></div><div class="row" style="justify-content:center;margin:18px 0"><button class="tabchip ${reg ? "" : "active"}" onclick="setAuthMode('login')">Kirish</button><button class="tabchip ${reg ? "active" : ""}" onclick="setAuthMode('register')">Ro‘yxatdan o‘tish</button></div>${msgs()}<form onsubmit="submitAuth(event)">${reg ? `<div class="fieldgroup"><label>Ism-familiya *</label><input class="field" id="authName" required minlength="3" maxlength="80" autocomplete="name" placeholder="Ism Familiya"></div>` : ""}<div class="fieldgroup"><label>Email *</label><input class="field" id="authEmail" type="email" required maxlength="160" autocomplete="email" placeholder="ism@mail.com"></div><div class="fieldgroup"><label>Parol *</label><input class="field" id="authPassword" type="password" required minlength="${reg ? 6 : 1}" autocomplete="${reg ? "new-password" : "current-password"}"></div>${reg ? `<div class="fieldgroup"><label>Parolni takrorlang *</label><input class="field" id="authPassword2" type="password" required minlength="6" autocomplete="new-password"></div>` : ""}<button class="primary" id="authSubmit" style="width:100%">${reg ? "Ro‘yxatdan o‘tish" : "Kirish"}</button></form><p class="notice" style="text-align:center;margin-top:14px">${reg ? "Parol kamida 6 belgi. Uni unutsangiz, sayt egasi yangi parol o‘rnatib beradi." : "Parolni unutdingizmi? Sayt egasiga murojaat qiling."}</p></div>`;
@@ -522,6 +607,7 @@ function adminPage() {
     ["participation", "Tur jamoalari"],
     ["teamsadmin", "Jamoalar"],
     ["appealsadmin", "Apellyatsiyalar"],
+    ["supportadmin", `Yordam${data.support.filter((x) => x.status === APPEAL_SENT).length ? " (" + data.support.filter((x) => x.status === APPEAL_SENT).length + ")" : ""}`],
     ["users", "Foydalanuvchilar"],
   ];
   if (state.role === "owner")
@@ -531,7 +617,7 @@ function adminPage() {
       ["settings", "Huquq va sozlamalar"],
       ["monitoring", "Monitoring"],
     );
-  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
+  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "supportadmin" ? supportAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
 }
 window.adminTab = async (k) => {
   state.adminTab = k;
@@ -730,12 +816,35 @@ function appealsAdmin() {
     const open = openAppeals.has(a.id);
     return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer;gap:10px" onclick="toggleAppeal('${a.id}')"><div><strong>${h(team(a.teamId)?.name || "Jamoa")}</strong> · ${h(tour(a.tourId)?.title || "Tur")} · ${a.question}-savol<div class="notice">${fmtDate(a.created)} · ${wordCount(a.message)} so‘z</div></div><div class="row" style="gap:8px">${appealBadge(a.status)}<span class="muted">${open ? "▴" : "▾"}</span></div></div>${
       open
-        ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><p style="white-space:pre-wrap;margin-top:0">${h(a.message)}</p><div class="fieldgroup"><label>Javob (foydalanuvchiga ko‘rinadi)</label><textarea class="field" id="answer_${a.id}" rows="3" maxlength="3000" placeholder="Hakamlar qarori va izoh">${h(a.answer || "")}</textarea></div>${a.answeredBy ? `<p class="notice" style="margin:0 0 8px">Oxirgi javob: ${h(a.answeredBy)} · ${fmtDate(a.answeredAt)}</p>` : ""}<div class="row" style="gap:8px;flex-wrap:wrap">${a.status === APPEAL_SENT ? `<button class="smallbtn soft" onclick="appealStatus('${a.id}','${APPEAL_REVIEW}')">Ko‘rib chiqishga olish</button>` : ""}<button class="primary" onclick="appealStatus('${a.id}','${APPEAL_DONE}')">✓ Javob yuborish (Ko‘rib chiqildi)</button>${a.status === APPEAL_DONE ? `<button class="smallbtn pill" onclick="appealStatus('${a.id}','${APPEAL_REVIEW}')">Qayta ochish</button>` : ""}</div></div>`
+        ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><p style="white-space:pre-wrap;margin-top:0">${h(a.message)}</p>${appealFixRow(a)}<div class="fieldgroup"><label>Javob (foydalanuvchiga ko‘rinadi)</label><textarea class="field" id="answer_${a.id}" rows="3" maxlength="3000" placeholder="Hakamlar qarori va izoh">${h(a.answer || "")}</textarea></div>${a.answeredBy ? `<p class="notice" style="margin:0 0 8px">Oxirgi javob: ${h(a.answeredBy)} · ${fmtDate(a.answeredAt)}</p>` : ""}<div class="row" style="gap:8px;flex-wrap:wrap">${a.status === APPEAL_SENT ? `<button class="smallbtn soft" onclick="appealStatus('${a.id}','${APPEAL_REVIEW}')">Ko‘rib chiqishga olish</button>` : ""}<button class="primary" onclick="appealStatus('${a.id}','${APPEAL_DONE}')">✓ Javob yuborish (Ko‘rib chiqildi)</button>${a.status === APPEAL_DONE ? `<button class="smallbtn pill" onclick="appealStatus('${a.id}','${APPEAL_REVIEW}')">Qayta ochish</button>` : ""}</div></div>`
         : ""
     }</div>`;
   };
   return `<div class="card pad"><h2 style="margin-top:0">Apellyatsiyalar</h2><p class="notice">Murojaatni bosib oching, javob yozing va “Javob yuborish” ni bosing — foydalanuvchi javobni o‘z sahifasida ko‘radi. Javoblar jadvali to‘g‘rilansa, tur natijasi avtomatik qayta hisoblanadi.</p><div class="row" style="gap:10px;align-items:end;margin:12px 0;flex-wrap:wrap"><label><strong>So‘z chegarasi</strong><br><input class="field" id="wordLimit" type="number" min="10" max="1000" style="width:120px;margin-top:6px" value="${data.appealWordLimit}"></label><button class="pill" onclick="saveWordLimit()">Saqlash</button><span class="notice">Foydalanuvchi apellyatsiyani shu miqdordagi so‘z bilan yozadi.</span></div><div class="tabstrip" style="margin-bottom:14px">${filters.map(([k, l]) => `<button class="tabchip ${appealFilter === k ? "active" : ""}" onclick="setAppealFilter('${k}')">${l} (${counts[k]})</button>`).join("")}</div>${list.map(card).join("") || '<div class="empty">Bu bo‘limda apellyatsiya yo‘q.</div>'}</div>`;
 }
+function appealFixRow(a) {
+  const t = tour(a.tourId);
+  if (!t) return "";
+  const yes = ((t.responses || {})[a.teamId] || {})[a.question - 1] === 1;
+  const fixes = (a.fixes || [])
+    .map((f) => `${h(f.by)} · ${fmtDate(f.at)} → ${f.value ? "+" : "−"}`)
+    .join("<br>");
+  return `<div class="note" style="margin:0 0 12px"><div class="row between" style="gap:10px;flex-wrap:wrap"><span>Jadvalda ${a.question}-savol: <strong style="color:${yes ? "var(--green)" : "var(--red)"}">${yes ? "+ to‘g‘ri" : "− noto‘g‘ri"}</strong> · ${t.published ? "natija e’lon qilingan" : "natija e’lon qilinmagan"}</span><button class="smallbtn soft" onclick="appealFix('${a.id}')">${yes ? "+ → − ga o‘zgartirish" : "− → + ga o‘zgartirish"}</button></div>${fixes ? `<small class="muted">O‘zgartirishlar:<br>${fixes}</small>` : ""}</div>`;
+}
+window.appealFix = async (id) => {
+  const a = data.appeals.find((x) => x.id === id),
+    t = tour(a?.tourId);
+  if (!a || !confirm(`${team(a.teamId)?.name} · ${t?.title} · ${a.question}-savol javobini o‘zgartirasizmi?${t?.published ? "\n\nTur natijasi e’lon qilingan: o‘rinlar va reyting darhol qayta hisoblanadi." : ""}`))
+    return;
+  try {
+    const x = await api("/api/action", { action: "appealFix", payload: { id } });
+    data = x.data;
+    normalize();
+    flash(x.message);
+  } catch (e) {
+    flash(e.message, true);
+  }
+};
 window.setAppealFilter = (k) => {
   appealFilter = k;
   draw();
@@ -974,7 +1083,8 @@ const AUDIT_LABELS = {
   team_close: "Jamoa faoliyatini tugatdi", approveTeam: "Jamoani tasdiqladi", rejectTeam: "Arizani rad etdi",
   deleteTeam: "Jamoani o‘chirdi", participation: "Tur tarkibi", flip: "Javob kiritdi", publishTour: "Natijani e’lon qildi",
   unpublishTour: "Turni qayta ochdi", appeal: "Apellyatsiya yubordi", appealStatus: "Apellyatsiyaga javob",
-  appealWordLimit: "So‘z chegarasi", userRole: "Rol o‘zgartirdi", passwordReset: "Parolni tikladi", site: "Asosiy oyna",
+  appealWordLimit: "So‘z chegarasi", appealFix: "Apellyatsiya bo‘yicha javobni tuzatdi",
+  support: "Yordam murojaati", supportStatus: "Murojaatga javob", userDelete: "Foydalanuvchini o‘chirdi", userRole: "Rol o‘zgartirdi", passwordReset: "Parolni tikladi", site: "Asosiy oyna",
   addNews: "Yangilik qo‘shdi", removeNews: "Yangilikni o‘chirdi", toursCount: "Turlar soni", renameTour: "Tur nomi",
   appealEnabled: "Apellyatsiya oynasi", editTeam: "Jamoa nomi",
 };
@@ -1016,7 +1126,7 @@ ${monStat("Taxminiy xarajat (sayt servisi)", `${money(m.cost.appMonthly)} / oy`,
 <div class="grid3">${monStat("Foydalanuvchilar", (a.users.user || 0) + (a.users.admin || 0) + (a.users.owner || 0), `Admin: ${a.users.admin || 0} · yangi: ${a.newUsers}`)}
 ${monStat("Kirishlar", a.logins, `Turli foydalanuvchi: ${a.activeUsers} · ro‘yxatdan o‘tish: ${a.registrations}`)}
 ${monStat("Xato parol bilan urinish", a.failedLogins, a.failedLogins > 20 ? '<span style="color:var(--red)">Ko‘p — parol tanlash urinishi bo‘lishi mumkin</span>' : "Me’yorda")}</div>
-<p class="notice" style="margin-top:12px">Jamoalar — ${statusCounts(a.teams, { pending: "kutilmoqda", approved: "tasdiqlangan", rejected: "rad etilgan", closed: "tugatilgan" })}<br>Apellyatsiyalar — ${statusCounts(a.appeals, { [APPEAL_SENT]: "yuborildi", [APPEAL_REVIEW]: "ko‘rib chiqilmoqda", [APPEAL_DONE]: "ko‘rib chiqildi" })}<br>Turlar — e’lon qilingan: <strong>${a.tours.published}</strong> / ${a.tours.total}</p>
+<p class="notice" style="margin-top:12px">Jamoalar — ${statusCounts(a.teams, { pending: "kutilmoqda", approved: "tasdiqlangan", rejected: "rad etilgan", closed: "tugatilgan" })}<br>Apellyatsiyalar — ${statusCounts(a.appeals, { [APPEAL_SENT]: "yuborildi", [APPEAL_REVIEW]: "ko‘rib chiqilmoqda", [APPEAL_DONE]: "ko‘rib chiqildi" })}<br>Yordam murojaatlari — ${statusCounts(a.support || {}, { [APPEAL_SENT]: "yangi", [APPEAL_REVIEW]: "ko‘rib chiqilmoqda", [APPEAL_DONE]: "hal qilingan" })}<br>Turlar — e’lon qilingan: <strong>${a.tours.published}</strong> / ${a.tours.total}</p>
 
 <div class="sectionTitle"><h2>Xatolar (${m.errors.length})</h2></div>
 ${m.errors.length ? `<div class="tablewrap"><table class="datatable"><thead><tr><th>Vaqt</th><th>Turi</th><th>So‘rov</th><th>Xabar</th></tr></thead><tbody>${m.errors.map((e) => `<tr><td style="white-space:nowrap">${fmtDate(e.ts)}</td><td>${e.kind === "crash" ? "Yiqilish" : "Xato"}</td><td>${h((e.method || "") + " " + (e.path || ""))}</td><td><details><summary>${h(String(e.message || "").split("\n")[0].slice(0, 120))}</summary><pre style="white-space:pre-wrap;font-size:11px;max-width:560px">${h(e.message || "")}</pre></details></td></tr>`).join("")}</tbody></table></div>` : '<div class="note">Bu davrda xato bo‘lmagan.</div>'}
@@ -1070,6 +1180,7 @@ function draw() {
       ranking: rankingPage,
       results: resultPage,
       appeals: appealsPage,
+      support: supportPage,
       login: loginPage,
       manage: adminPage,
     }[state.page] || home

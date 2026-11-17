@@ -53,10 +53,16 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 
 ## Apellyatsiya
 
-- Ega "Huquq va sozlamalar"da yoqadi. Faqat jamoa sardori, jamoasi qatnashgan va hali e'lon qilinmagan tur bo'yicha, **yozma** ravishda yuboradi.
+- Ega "Huquq va sozlamalar"da yoqadi. Jamoa sardori o'z jamoasi **qatnashgan istalgan tur** bo'yicha (natija e'lon qilingan bo'lsa ham) **yozma** e'tiroz yuboradi. Savol tanlanganda jadvaldagi joriy javob (+/−) ko'rinadi.
 - Matn uzunligi **so'z chegarasi** bilan cheklanadi (standart 100). Chegarani admin va ega "Apellyatsiyalar" bo'limida o'zgartiradi.
-- Holatlar: **Yuborildi → Ko'rib chiqilmoqda → Ko'rib chiqildi**. Admin javob yozadi; "Ko'rib chiqildi" uchun javob majburiy. Foydalanuvchi holat va javobni "Apellyatsiya" sahifasida ko'radi.
+- Holatlar: **Yuborildi → Ko'rib chiqilmoqda → Ko'rib chiqildi**. Admin javob yozadi; "Ko'rib chiqildi" uchun javob majburiy.
+- Apellyatsiya qabul qilinsa, admin kartadagi tugma bilan shu savol javobini almashtiradi — natija e'lon qilingan bo'lsa ham; o'rin va reyting darhol qayta hisoblanadi, o'zgarish kim va qachon qilgani bilan saqlanadi.
 - Bir savol bo'yicha ochiq apellyatsiya bo'lsa, ikkinchisini yuborib bo'lmaydi.
+
+## Yordam
+
+- Har bir foydalanuvchi "Yordam" bo'limida muammo yozadi: turda qatnashgani belgilanmagan, natijada xato, jamoa, saytdagi texnik xato yoki boshqa. Turni ham ko'rsatish mumkin.
+- Admin va ega "Boshqaruv → Yordam"da ko'radi (yangilari soni menyuda), javob yozadi; holatlar apellyatsiyadagidek. Bir foydalanuvchida bir vaqtda 5 tagacha ochiq murojaat.
 
 ## Monitoring (faqat ega)
 
