@@ -12,16 +12,18 @@ body{font-family:var(--text)}
 .zb{--rowh:34px;background:var(--board);border-radius:18px;padding:18px 18px 14px;color:var(--chalk);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);font-variant-numeric:tabular-nums;position:relative}
 .zb-head,.zb-row,.zb-foot{display:grid;grid-template-columns:26px minmax(84px,150px) 1fr 40px 40px;align-items:center;column-gap:12px}
 .zb-head{font-size:12px;color:rgba(243,246,241,.62);padding-bottom:8px}
-.zb-rounds{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:10px}
-.zb-rounds span{border-top:1px solid rgba(243,246,241,.22);padding-top:6px}
+.zb-rounds .zb-grp{display:block;border-top:1px solid rgba(243,246,241,.22);padding-top:6px}
+.zb-dots{visibility:hidden}
 .zb-num{text-align:right}
 .zb-body{position:relative;transition:height .3s}
 .zb-row{position:absolute;left:0;right:0;height:var(--rowh);transition:transform .55s cubic-bezier(.2,.8,.2,1)}
 .zb-pos{font:700 13px/1 var(--display);color:rgba(243,246,241,.55);text-align:center}
 .zb-row.lead .zb-pos{color:var(--brass)}
 .zb-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.zb-cells{display:grid;grid-template-columns:repeat(12,1fr) 10px repeat(12,1fr) 10px repeat(12,1fr);column-gap:3px;align-items:center;height:100%}
-.zb-gap{display:block}
+.zb-cells{display:block;height:100%;min-width:0}
+.zb-track{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:10px;height:100%}
+.zb-grp{display:grid;grid-template-columns:repeat(12,1fr);column-gap:3px;align-items:center;height:100%;min-width:0}
+.zb-clone{display:none!important}
 .zb-c{display:block;height:20px;border-radius:4px;background:rgba(243,246,241,.09);transition:background .25s,transform .2s,box-shadow .2s}
 .zb-c.on{background:var(--brass)}
 .zb-play .zb-c.on:not(.in){background:rgba(243,246,241,.09)}
@@ -34,7 +36,7 @@ body{font-family:var(--text)}
 .zb-sr{font-weight:600;color:rgba(243,246,241,.75)}
 .zb-foot{margin-top:8px;height:34px;align-items:end}
 .zb-foot-label{font-size:12px;color:rgba(243,246,241,.62);text-align:right;align-self:end;padding-bottom:2px;white-space:nowrap}
-.zb-foot .zb-cells{align-items:end}
+.zb-foot .zb-grp{align-items:end}
 .zb-bar{display:block;height:calc(var(--h,0) * 30px);min-height:2px;background:rgba(226,180,75,.42);border-radius:3px 3px 0 0;transition:height .4s}
 .zb-bar.zb-hot{background:var(--brass)}
 .zb-cap{margin:12px 0 0;min-height:42px;font-size:14px;line-height:1.5;color:rgba(243,246,241,.82);max-width:68ch}
@@ -122,16 +124,25 @@ body.is-auth #app.shell{max-width:none;padding:0}
 @media (max-width:900px){.zh-hero,.zh-cols{grid-template-columns:1fr}}
 @media (max-width:640px){
   .zb{--rowh:30px;padding:14px 10px 10px;border-radius:14px}
-  .zb-head,.zb-row,.zb-foot{grid-template-columns:18px minmax(64px,92px) 1fr 26px 30px;column-gap:6px}
-  .zb-cells{column-gap:1.5px;grid-template-columns:repeat(12,1fr) 5px repeat(12,1fr) 5px repeat(12,1fr)}
-  .zb-c{height:16px;border-radius:2px}
-  .zb-name{font-size:12px}.zb-count{font-size:13px}.zb-sr{font-size:12px}
-  .zb-rounds{column-gap:5px;font-size:10px}
+  .zb-head,.zb-row,.zb-foot{grid-template-columns:16px minmax(66px,84px) 1fr 24px 28px;column-gap:5px}
+  /* bitta raund ko'rinadi: lenta 4 guruh (1,2,3 va 1-raund nusxasi), --rk bo'yicha suriladi */
+  .zb-cells{overflow:hidden}
+  .zb-track{display:flex;column-gap:0;width:400%;transform:translateX(calc(var(--rk,0) * -25%));transition:transform .8s cubic-bezier(.65,0,.35,1);will-change:transform}
+  .zb-grp{flex:0 0 25%;column-gap:2.5px;padding:0 4px;box-sizing:border-box}
+  .zb-clone{display:grid!important}
+  .zb-rounds .zb-clone{display:block!important}
+  .zb-snap .zb-track{transition:none!important}
+  .zb-c{height:18px;border-radius:3px}
+  .zb-name{font-size:11.5px;line-height:1.15;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}.zb-count{font-size:13px}.zb-sr{font-size:12px}
+  .zb-rounds{font-size:11px}.zb-rounds .zb-grp{text-align:center}
+  .zb-dots{visibility:visible;display:flex;gap:5px;align-items:center;align-self:end;padding-bottom:3px}
+  .zb-dots i{width:6px;height:6px;border-radius:50%;background:rgba(243,246,241,.25);transition:background .3s,width .3s;cursor:pointer}
+  .zb[data-rk="0"] .zb-dots i:nth-child(1),.zb[data-rk="1"] .zb-dots i:nth-child(2),.zb[data-rk="2"] .zb-dots i:nth-child(3){background:var(--brass);width:16px;border-radius:3px}
   .zb-foot-label{font-size:10px;white-space:normal;line-height:1.1}
   .zh-facts{grid-template-columns:1fr 1fr 1fr}.zh-tasks{grid-template-columns:1fr 1fr}
   .zh-track{gap:3px}.zh-seg{height:34px;font-size:10px}
 }
-@media (prefers-reduced-motion:reduce){.zb-row,.zb-c,.zb-bar,.zb-body{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){.zb-row,.zb-c,.zb-bar,.zb-body,.zb-track{transition:none!important;animation:none!important}}
 .za :focus-visible,.zh-hero :focus-visible,.zb :focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 
 /* --- Nozik harakat --- */
@@ -1324,23 +1335,32 @@ function zbHTML(id, teams, opts = {}) {
   ZB[id] = { teams, opts };
   const m = zbModel(teams),
     vis = Math.min(teams.length, opts.limit || teams.length);
+  const grp = (k, inner, clone) => `<span class="zb-grp${clone ? " zb-clone" : ""}"${clone ? ' aria-hidden="true"' : ""}>${inner(k)}</span>`;
+  const track = (inner) => `<span class="zb-track">${[0, 1, 2].map((k) => grp(k, inner)).join("")}${grp(0, inner, true)}</span>`;
   const cells = (t, i) =>
-    t.ans
-      .map(
-        (v, q) =>
-          `${q && q % 12 === 0 ? '<i class="zb-gap"></i>' : ""}<b class="zb-c${v ? " on" : ""}" style="--q:${q};--r:${i}" data-t="${i}" data-q="${q}"${opts.interactive ? ` role="button" tabindex="-1" aria-label="${h(t.name)}, ${q + 1}-savol"` : ""}></b>`,
-      )
-      .join("");
+    track((k) =>
+      t.ans
+        .slice(k * 12, k * 12 + 12)
+        .map((v, j) => {
+          const q = k * 12 + j;
+          return `<b class="zb-c${v ? " on" : ""}" style="--q:${q};--r:${i}" data-t="${i}" data-q="${q}"${opts.interactive ? ` role="button" tabindex="-1" aria-label="${h(t.name)}, ${q + 1}-savol"` : ""}></b>`;
+        })
+        .join(""),
+    );
   const rows = m.rows
     .map(
       (r) =>
         `<div class="zb-row" data-row="${r.i}" style="transform:translateY(${r.slot * ZB_ROW()}px)${r.slot >= vis ? ";display:none" : ""}"><span class="zb-pos">${r.pos}</span><span class="zb-name" title="${h(r.name)}">${h(r.name)}</span><span class="zb-cells">${cells(teams[r.i], r.i)}</span><span class="zb-num zb-count">${r.count}</span><span class="zb-num zb-sr">${r.sr}</span></div>`,
     )
     .join("");
-  const bars = m.rating
-    .map((v, q) => `${q && q % 12 === 0 ? '<i class="zb-gap"></i>' : ""}<b class="zb-bar" data-q="${q}" style="--h:${v / (m.n + 1)}"></b>`)
-    .join("");
-  return `<div class="zb${opts.interactive ? " zb-live" : ""}" id="${id}"><div class="zb-head"><span></span><span></span><span class="zb-rounds"><span>1-raund</span><span>2-raund</span><span>3-raund</span></span><span class="zb-num">Jami</span><span class="zb-num">SR</span></div><div class="zb-body" style="height:${vis * ZB_ROW()}px">${rows}</div><div class="zb-foot"><span></span><span class="zb-foot-label">Savol reytingi</span><span class="zb-cells">${bars}</span><span></span><span></span></div><p class="zb-cap" aria-live="polite">${h(opts.caption || "")}</p></div>`;
+  const bars = track((k) =>
+    m.rating
+      .slice(k * 12, k * 12 + 12)
+      .map((v, j) => `<b class="zb-bar" data-q="${k * 12 + j}" style="--h:${v / (m.n + 1)}"></b>`)
+      .join(""),
+  );
+  const rounds = track((k) => `<span>${k + 1}-raund</span>`);
+  return `<div class="zb${opts.interactive ? " zb-live" : ""}" id="${id}" data-rk="${zbCar[id]?.k % 3 || 0}" style="--rk:${zbCar[id]?.k % 3 || 0}"><div class="zb-head"><span></span><span class="zb-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="zb-rounds zb-cells">${rounds}</span><span class="zb-num">Jami</span><span class="zb-num">SR</span></div><div class="zb-body" style="height:${vis * ZB_ROW()}px">${rows}</div><div class="zb-foot"><span></span><span class="zb-foot-label">Savol reytingi</span><span class="zb-cells">${bars}</span><span></span><span></span></div><p class="zb-cap" aria-live="polite">${h(opts.caption || "")}</p></div>`;
 }
 function zbApply(id, upto = 36) {
   const st = ZB[id],
@@ -1405,6 +1425,7 @@ function zbMount(id) {
     });
   // Bitta orkestrlangan lahza: javoblar savolma-savol tushadi, har raund oxirida o'rinlar almashadi.
   // Holat elementda emas, zbAnim'da — sahifa qayta chizilsa ham animatsiya o'sha joyidan davom etadi.
+  zbCarousel(id);
   const key = id + ":" + state.page;
   if (state.page === "login") return zbApply(id);
   const run = zbAnim[id];
@@ -1412,22 +1433,86 @@ function zbMount(id) {
   if (zbPlayed.has(key) || reduceMotion()) return zbApply(id);
   zbPlayed.add(key);
   zbAnim[id] = { key, q: 0 };
+  if (zbMobile()) zbSet(id, 0, false);
   zbPaint(id, 0);
   const tick = () => {
     const a = zbAnim[id];
     if (!a || !$(id)) return delete zbAnim[id];
     a.q++;
     zbPaint(id, a.q);
-    if (a.q < 36) setTimeout(tick, a.q % 12 === 0 ? 380 : 38);
+    const turn = a.q % 12 === 0 && a.q < 36;
+    if (turn && zbMobile()) zbSet(id, a.q / 12);
+    if (a.q < 36) setTimeout(tick, turn ? (zbMobile() ? ZB_SLIDE + 250 : 380) : 38);
     else {
       delete zbAnim[id];
       $(id).classList.remove("zb-play");
       zbApply(id);
+      zbSchedule(id); // oxirgi raund ham to'liq 4.4 s ko'rinsin
     }
   };
   setTimeout(tick, 350);
 }
 const zbAnim = {};
+// ---------- Telefonda raund karuseli ----------
+// Bir vaqtda bitta raund; 4.4 s da bir marta 0.8 s davomida silliq suriladi. Doim oldinga: 1 → 2 → 3 → 1
+// (3-dan keyin 1-raund nusxasi o'ngdan kiradi, so'ng sezdirmasdan haqiqiy 1-raundga almashadi).
+const zbCar = {};
+const ZB_STEP = 4400, ZB_SLIDE = 800;
+const zbMobile = () => window.matchMedia("(max-width: 640px)").matches;
+function zbSet(id, k, animate = true) {
+  const el = $(id);
+  if (!el) return;
+  const c = (zbCar[id] ??= { k: 0 });
+  if (!animate) el.classList.add("zb-snap");
+  c.k = k;
+  el.style.setProperty("--rk", k);
+  el.dataset.rk = k % 3;
+  if (!animate) {
+    void el.offsetWidth;
+    el.classList.remove("zb-snap");
+  }
+  clearTimeout(c.snap);
+  if (k === 3) c.snap = setTimeout(() => zbSet(id, 0, false), ZB_SLIDE + 30);
+}
+function zbSchedule(id) {
+  const c = (zbCar[id] ??= { k: 0 });
+  clearTimeout(c.timer);
+  if (!zbMobile() || reduceMotion()) return;
+  c.timer = setTimeout(() => {
+    if (!$(id)) return;
+    if (zbAnim[id] || c.hold) return zbSchedule(id); // boshlang'ich animatsiya yoki barmoq tegib turibdi
+    zbSet(id, (c.k % 3) + 1); // 0→1→2→3(=1-raund nusxasi)
+    zbSchedule(id);
+  }, ZB_STEP);
+}
+function zbCarousel(id) {
+  const el = $(id);
+  if (!el) return;
+  const c = (zbCar[id] ??= { k: 0 });
+  if (c.k === 3) zbSet(id, 0, false);
+  // qo'lda surish: chapga — keyingi raund, o'ngga — oldingi
+  let x0 = null, y0 = null;
+  el.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; c.hold = true; }, { passive: true });
+  el.addEventListener("touchend", (e) => {
+    c.hold = false;
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.3 || !zbMobile()) return;
+    const cur = c.k % 3;
+    if (dx < 0) zbSet(id, cur + 1);
+    else {
+      if (cur === 0) zbSet(id, 3, false), void el.offsetWidth;
+      zbSet(id, cur === 0 ? 2 : cur - 1);
+    }
+    zbSchedule(id);
+  }, { passive: true });
+  el.querySelectorAll(".zb-dots i").forEach((d, i) =>
+    d.addEventListener("click", () => { zbSet(id, i); zbSchedule(id); }),
+  );
+  zbSchedule(id);
+}
+
 function zbPaint(id, q) {
   const el = $(id),
     st = ZB[id];
