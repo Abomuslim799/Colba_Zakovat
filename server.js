@@ -224,6 +224,7 @@ function safeState(src, user) {
       id: t.id, name: t.name, members: t.members, branch: t.branch, approved: !!t.approved, description: t.description,
       photos: t.photos || 0,
       status: t.status, mine: t.createdBy === user.id, closedAt: t.closedAt,
+      change: t.createdBy === user.id ? t.change : undefined,
     }));
   return s;
 }
@@ -389,8 +390,9 @@ app.get('/api/state', requires('user'), async (req, res, next) => {
 app.get('/api/team/name-check', requires('user'), async (req, res, next) => {
   try {
     const name = String(req.query.name || '').slice(0, 80);
+    const except = req.query.except ? String(req.query.except) : undefined;
     const { rows } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-    res.json({ similar: similar(name, rows[0].data.teams) });
+    res.json({ similar: similar(name, rows[0].data.teams, except) });
   } catch (e) { next(e); }
 });
 
@@ -476,6 +478,39 @@ app.post('/api/teams/:id/captain', requires('staff'), async (req, res, next) => 
       return u ? `“${tm.name}” jamoasiga sardor hisobi biriktirildi: ${u.name}` : 'Sardor hisobi ajratildi';
     });
   } catch (e) { next(e); }
+});
+
+// ---------- Sardor jamoa nomi/tarkibini o'zgartirish arizasi ----------
+// Ariza tasdiqlanmaguncha jamoa avvalgi holatida qoladi; admin/ega tasdiqlasa hammasi bir vaqtda o'zgaradi.
+function cleanMembers(members) {
+  const ok = Array.isArray(members) && members.length >= 4 && members.length <= 8 &&
+    members.every((x) => typeof x === 'string' && x.trim().length >= 3 && x.trim().length <= 100);
+  return ok ? members.map((x) => x.trim().replace(/\s+/g, ' ')) : null;
+}
+app.post('/api/teams/:id/change', requires('user'), (req, res) => {
+  const name = String(req.body.name || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+  const members = cleanMembers(req.body.members);
+  update(req, res, 'teamChange', { teamId: req.params.id }, (s) => {
+    const tm = s.teams.find((t) => t.id === req.params.id && t.status === 'approved');
+    if (!tm) bad('Faol jamoa topilmadi', 404);
+    if (!tm.createdBy || tm.createdBy !== req.user.id) bad('Jamoani faqat uning sardori o‘zgartira oladi', 403);
+    if (!name || !members) bad('Jamoa nomi va 4–8 nafar a’zoning ism-familiyasi (kamida 3 harf) talab etiladi');
+    if (new Set(members.map((x) => x.toLocaleLowerCase('uz'))).size !== members.length) bad('Bir a’zo ikki marta yozilgan');
+    if (name === tm.name && JSON.stringify(members) === JSON.stringify(tm.members)) bad('Hech narsa o‘zgarmagan');
+    if (name !== tm.name && similar(name, s.teams, tm.id)) bad('O‘xshash nom, iltimos boshqa nom tanlang.');
+    tm.change = { status: 'pending', name, members, at: Date.now(), byName: req.user.name };
+    return 'O‘zgartirish arizasi yuborildi. Admin tasdiqlagach jamoa nomi va tarkibi yangilanadi.';
+  });
+});
+app.post('/api/teams/:id/change/cancel', requires('user'), (req, res) => {
+  update(req, res, 'teamChangeCancel', { teamId: req.params.id }, (s) => {
+    const tm = s.teams.find((t) => t.id === req.params.id);
+    if (!tm?.change) bad('Ariza topilmadi', 404);
+    if (!tm.createdBy || tm.createdBy !== req.user.id) bad('Arizani faqat jamoa sardori qaytarib oladi', 403);
+    const was = tm.change.status;
+    delete tm.change;
+    return was === 'pending' ? 'O‘zgartirish arizasi qaytarib olindi' : 'Xabar yopildi';
+  });
 });
 
 // ---------- Jamoa profili: tavsif va suratlar (sardor yoki admin/ega) ----------
@@ -588,6 +623,25 @@ app.post('/api/action', requires('staff'), (req, res) => {
         if (!tm || tm.status !== 'pending') bad('Jamoani rad etish mumkin emas');
         tm.status = 'rejected';
         return 'Ariza rad etildi';
+      case 'approveChange': {
+        if (!tm || tm.status !== 'approved' || tm.change?.status !== 'pending') bad('Kutilayotgan o‘zgartirish arizasi topilmadi');
+        const c = tm.change;
+        if (c.name !== tm.name && similar(c.name, s.teams, tm.id)) bad('Bu orada o‘xshash nomli jamoa paydo bo‘lgan — arizani rad eting');
+        tm.history = (tm.history || []).concat({
+          at: Date.now(), by: req.user.name, requestedBy: c.byName,
+          from: { name: tm.name, members: tm.members }, to: { name: c.name, members: c.members },
+        }).slice(-20);
+        tm.name = c.name; tm.members = c.members;
+        delete tm.change;
+        return `“${c.name}” jamoasining yangi nomi va tarkibi tasdiqlandi`;
+      }
+      case 'rejectChange': {
+        if (!tm || tm.change?.status !== 'pending') bad('Kutilayotgan o‘zgartirish arizasi topilmadi');
+        tm.change.status = 'rejected';
+        tm.change.reason = String(payload.reason || '').trim().slice(0, 300);
+        tm.change.decidedAt = Date.now();
+        return 'O‘zgartirish arizasi rad etildi';
+      }
       case 'deleteTeam': {
         if (!tm) bad('Jamoa topilmadi');
         if (tm.status === 'closed') bad('Faoliyati tugatilgan jamoa natijalar tarixida saqlanadi');

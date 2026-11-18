@@ -154,6 +154,8 @@ body.is-auth #app.shell{max-width:none;padding:0}
 @media (prefers-reduced-motion:reduce){.zb-c.on,.za-title,.za-lede,.za-stage .zb,.za-form,.zh-seg.next,.zh-rank.grow .zh-rank-bar i{animation:none!important}}
 
 
+
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -352,6 +354,21 @@ main.shell{overflow-x:clip}
   .pgrid,.qcols,.zh-cols,.zh-hero{grid-template-columns:minmax(0,1fr)}
 }
 .pcol,.zh-cols>*,.qcols>*,.qside{min-width:0}
+
+/* Sardor: nom va tarkibni o'zgartirish arizasi */
+.chg-box{margin:12px 0;padding:14px 16px;border-radius:14px;border:1px solid rgba(14,59,44,.12);background:rgba(255,255,255,.55)}
+.chg-box.pending{border-color:rgba(201,150,40,.45);background:rgba(255,246,222,.6)}
+.chg-box.rejected{border-color:rgba(180,60,60,.35);background:rgba(255,236,236,.6)}
+.chg-box strong{display:block;margin-bottom:4px}
+.chg-box p{margin:4px 0}
+.chg-name{font-size:15px;margin:8px 0}
+.chg-old{text-decoration:line-through;color:#8a948f}
+.chg-add{background:#e3f6ea!important;color:#16794a!important}
+.chg-list{margin-top:6px}
+.chg-form{margin-top:12px}
+.chg-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin:12px 0}
+.chg-cols>div{min-width:0}
+.chg-box .chg-name strong,.chg-admin .chg-name strong{display:inline;margin:0}
 </style></head><body><header class="top"><div class="shell topin"><a class="brand" href="#" onclick="go('home');return false"><img class="logo" src="/logo.png" alt="COLBA"><div><div class="brandname">COLBA <span class="highlight">ZAKOVAT</span></div><span class="subbrand">LIGA PLATFORMASI</span></div></a><nav class="nav" id="nav"></nav><div class="tools" id="tools"></div></div></header><main class="shell" id="app"></main><footer class="shell foot">COLBA Zakovat Ligasi · Intellektual musobaqalar boshqaruv tizimi<br>G‘oya muallifi va platforma yaratuvchisi: <strong>Adhamjon Zokirjanov</strong></footer><div id="modalRoot"></div>
 <script>
 "use strict";
@@ -571,6 +588,7 @@ function setPage(p, param) {
   if (p === "questions") state.questionsTourId = param != null ? Number(param) : state.questionsTourId;
   state.message = "";
   state.error = "";
+  changeEditing = false;
   closeSheet();
   const hsh = pageHash();
   if (location.hash !== hsh) history.pushState(null, "", hsh);
@@ -1037,6 +1055,124 @@ window.saveTeamProfile = async (id) => {
     flash(e.message, true);
   }
 };
+
+// ---------- Sardor: jamoa nomi va tarkibini o'zgartirish arizasi ----------
+let changeEditing = false,
+  changeNameSimilar = false,
+  changeNameTimer;
+const captainCanChange = (t) => !!t && t.status === "approved" && (t.mine || (t.createdBy && t.createdBy === currentUser?.id));
+function changeBanner(t) {
+  const c = t.change;
+  if (!c || !captainCanChange(t)) return "";
+  if (c.status === "pending")
+    return `<div class="chg-box pending"><strong>O‘zgartirish arizangiz ko‘rib chiqilmoqda</strong><p class="notice">Admin tasdiqlaguncha jamoa avvalgi nomi va tarkibi bilan qoladi. Yuborilgan: ${h(new Date(c.at).toLocaleString("uz-UZ"))}</p>${changeDiff(t, c)}<div class="row" style="gap:8px;margin-top:10px"><button class="pill" onclick="openTeamChange()">Arizani tahrirlash</button><button class="smallbtn danger" onclick="cancelTeamChange('${t.id}', true)">Arizani qaytarib olish</button></div></div>`;
+  return `<div class="chg-box rejected"><strong>O‘zgartirish arizangiz rad etildi</strong>${c.reason ? `<p>Sabab: ${h(c.reason)}</p>` : '<p class="notice">Sabab ko‘rsatilmagan.</p>'}<div class="row" style="gap:8px;margin-top:10px"><button class="pill" onclick="openTeamChange()">Qayta yuborish</button><button class="smallbtn pill" onclick="cancelTeamChange('${t.id}', false)">Yopish</button></div></div>`;
+}
+// eski va yangi holatni solishtirish (sardor ham, admin ham ko'radi)
+function changeDiff(t, c) {
+  const key = (x) => x.trim().toLocaleLowerCase("uz");
+  const old = members(t),
+    oldK = new Set(old.map(key)),
+    newK = new Set(c.members.map(key));
+  const nameRow = c.name !== t.name ? `<p class="chg-name"><span class="chg-old">${h(t.name)}</span> → <strong>${h(c.name)}</strong></p>` : `<p class="notice">Nom o‘zgarmaydi: ${h(t.name)}</p>`;
+  const list = c.members.map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}${oldK.has(key(m)) ? "" : ' <span class="tag chg-add">yangi</span>'}</li>`).join("");
+  const gone = old.filter((m) => !newK.has(key(m)));
+  return `${nameRow}<ol class="pmembers chg-list">${list}</ol>${gone.length ? `<p class="notice">Tarkibdan chiqadi: ${gone.map((m) => `<span class="chg-old">${h(m)}</span>`).join(", ")}</p>` : ""}`;
+}
+function teamChangeForm(t) {
+  const c = t.change?.status === "pending" ? t.change : null;
+  const nm = c ? c.name : t.name,
+    ms = c ? c.members : members(t);
+  return `<form class="chg-form" onsubmit="submitTeamChange(event,'${t.id}')"><div class="fieldgroup"><label>Jamoa nomi *</label><input class="field" id="chgname" maxlength="80" value="${h(nm)}" oninput="changeNameCheck('${t.id}')"></div><div class="gridfields">${Array.from({ length: 8 }, (_, i) => `<div class="fieldgroup"><label>${i === 0 ? "1. Jamoa sardori *" : i + 1 + ". O‘yinchi" + (i < 4 ? " *" : " (ixtiyoriy)")}</label><input class="field" id="chg${i}" maxlength="100" value="${h(ms[i] || "")}" placeholder="Ism Familiya" oninput="checkTeamChange('${t.id}')"></div>`).join("")}</div><p id="chgstatus" class="notice">O‘zgarishlar admin tasdiqlagach kuchga kiradi.</p><button class="primary" id="chgsubmit" type="submit">Arizani yuborish</button> <button class="pill" type="button" onclick="closeTeamChange()">Bekor qilish</button></form>`;
+}
+function readTeamChange() {
+  return {
+    name: ($("chgname")?.value || "").trim().replace(/\s+/g, " "),
+    members: Array.from({ length: 8 }, (_, i) => ($("chg" + i)?.value || "").trim().replace(/\s+/g, " ")).filter(Boolean),
+  };
+}
+window.checkTeamChange = (id) => {
+  const t = team(id),
+    { name, members: ms } = readTeamChange(),
+    first = ($("chg0")?.value || "").trim();
+  const dup = new Set(ms.map((x) => x.toLocaleLowerCase("uz"))).size !== ms.length;
+  const same = name === t.name && JSON.stringify(ms) === JSON.stringify(members(t));
+  const short = ms.some((x) => x.length < 3);
+  const msg = !name ? "Jamoa nomini kiriting."
+    : !first ? "Sardorning ism-familiyasi kerak."
+    : ms.length < 4 ? `Kamida 4 nafar kerak (hozir ${ms.length}).`
+    : short ? "Har bir ism-familiya kamida 3 harf bo‘lsin."
+    : dup ? "Bir a’zo ikki marta yozilgan."
+    : changeNameSimilar ? "O‘xshash nomli jamoa bor, boshqa nom tanlang."
+    : same ? "Hech narsa o‘zgarmagan."
+    : "Yuborish mumkin. O‘zgarishlar admin tasdiqlagach kuchga kiradi.";
+  const ok = msg.startsWith("Yuborish");
+  if ($("chgsubmit")) $("chgsubmit").disabled = !ok;
+  if ($("chgstatus")) $("chgstatus").textContent = msg;
+};
+window.changeNameCheck = (id) => {
+  changeNameSimilar = false;
+  checkTeamChange(id);
+  clearTimeout(changeNameTimer);
+  const name = $("chgname")?.value.trim();
+  if (name && name !== team(id)?.name && name.length >= 3)
+    changeNameTimer = setTimeout(async () => {
+      try {
+        const r = await api("/api/team/name-check?name=" + encodeURIComponent(name) + "&except=" + encodeURIComponent(id));
+        if ($("chgname")?.value.trim() !== name) return;
+        changeNameSimilar = r.similar;
+        checkTeamChange(id);
+      } catch (e) {}
+    }, 300);
+};
+window.openTeamChange = () => {
+  changeEditing = true;
+  changeNameSimilar = false;
+  draw();
+  setTimeout(() => checkTeamChange(state.teamId), 0);
+};
+window.closeTeamChange = () => {
+  changeEditing = false;
+  draw();
+};
+window.submitTeamChange = async (e, id) => {
+  e.preventDefault();
+  try {
+    const x = await api("/api/teams/" + encodeURIComponent(id) + "/change", readTeamChange());
+    data = x.data;
+    normalize();
+    changeEditing = false;
+    flash(x.message);
+  } catch (err) {
+    flash(err.message, true);
+  }
+};
+window.cancelTeamChange = async (id, ask) => {
+  if (ask && !confirm("O‘zgartirish arizasini qaytarib olasizmi?")) return;
+  try {
+    const x = await api("/api/teams/" + encodeURIComponent(id) + "/change/cancel", {});
+    data = x.data;
+    normalize();
+    flash(x.message);
+  } catch (err) {
+    flash(err.message, true);
+  }
+};
+// admin: o'zgartirish arizalari
+function changeRequestCard(t) {
+  const c = t.change;
+  return `<div class="card chg-admin" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="flex-wrap:wrap;gap:8px"><div><strong>${h(t.name)}</strong> <span class="tag" style="background:#fff4dc;color:#9a6a00">o‘zgartirish arizasi</span><div class="notice">Yubordi: ${h(c.byName || t.createdByName || "sardor")} · ${h(new Date(c.at).toLocaleString("uz-UZ"))}${t.branch ? " · " + h(t.branch) : ""}</div></div></div><div class="chg-cols"><div><span class="notice">Hozirgi tarkib</span><ol class="pmembers">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol></div><div><span class="notice">Yangi holat</span>${changeDiff(t, c)}</div></div><div class="row" style="gap:8px"><button class="primary" onclick="approveChange('${t.id}')">✓ Tasdiqlash</button><button class="pill" onclick="rejectChange('${t.id}')">Rad etish</button></div></div>`;
+}
+window.approveChange = async (id) => {
+  if (confirm(`“${team(id)?.name}” jamoasining yangi nomi va tarkibini tasdiqlaysizmi?`))
+    if (await mutate("approveChange", { teamId: id })) flash("O‘zgarishlar kuchga kirdi");
+};
+window.rejectChange = async (id) => {
+  const reason = prompt("Rad etish sababi (sardorga ko‘rinadi, ixtiyoriy):", "");
+  if (reason === null) return;
+  if (await mutate("rejectChange", { teamId: id, reason })) flash("Ariza rad etildi");
+};
+
 function teamHistory(id) {
   return listTours()
     .filter((t) => t.published && (t.activeTeams || []).includes(id))
@@ -1094,7 +1230,11 @@ ${msgs()}
       : t.description
         ? `<p class="pdesc">${h(t.description)}</p>`
         : `<p class="zh-muted">${edit ? "Jamoa haqida qisqacha yozing — boshqalar profilni ochganda ko‘radi." : "Tavsif qo‘shilmagan."}</p>`
-  }<h3 class="h3">Tarkib</h3><ol class="pmembers">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol></section>
+  }<div class="row between" style="margin-top:18px"><h3 class="h3" style="margin:0">Tarkib</h3>${captainCanChange(t) && !changeEditing ? `<button class="smallbtn pill" onclick="openTeamChange()">Nom va tarkibni o‘zgartirish</button>` : ""}</div>${changeBanner(t)}${
+    changeEditing && captainCanChange(t)
+      ? teamChangeForm(t)
+      : `<ol class="pmembers">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol>`
+  }</section>
 <section class="glass pad"><h2 class="h2">Suratlar</h2>${galleryHTML(t)}</section>
 </div>
 <div class="pcol">
@@ -1371,13 +1511,13 @@ function loginPage() {
 // ---------- Bosh sahifa ----------
 function zhRoleCard() {
   if (state.role !== "public") {
-    const pending = data.teams.filter((t) => t.status === "pending").length,
+    const pending = data.teams.filter((t) => t.status === "pending").length + data.teams.filter((t) => t.approved && t.change?.status === "pending").length,
       appeals = data.appeals.filter((a) => a.status !== APPEAL_DONE).length,
       support = data.support.filter((x) => x.status !== APPEAL_DONE).length,
       noCaptain = data.teams.filter((t) => t.approved && !t.createdBy).length;
     const item = (n, label, tab) =>
       `<button class="zh-task${n ? " due" : ""}" onclick="go('manage');adminTab('${tab}')"><strong>${n}</strong><span>${label}</span></button>`;
-    return `<div class="zh-card"><h2>Ko‘rib chiqish kutmoqda</h2><div class="zh-tasks">${item(pending, "jamoa arizasi", "teamsadmin")}${item(appeals, "ochiq apellyatsiya", "appealsadmin")}${item(support, "yordam murojaati", "supportadmin")}${item(noCaptain, "jamoada sardor hisobi yo‘q", "teamsadmin")}</div></div>`;
+    return `<div class="zh-card"><h2>Ko‘rib chiqish kutmoqda</h2><div class="zh-tasks">${item(pending, "jamoa arizasi (yangi va o‘zgartirish)", "teamsadmin")}${item(appeals, "ochiq apellyatsiya", "appealsadmin")}${item(support, "yordam murojaati", "supportadmin")}${item(noCaptain, "jamoada sardor hisobi yo‘q", "teamsadmin")}</div></div>`;
   }
   const own = myTeams().find((t) => t.status === "approved" || t.status === "pending");
   if (!own)
@@ -1914,7 +2054,8 @@ function teamsAdmin() {
   const accepted = data.teams.filter((t) => t.approved);
   const rejected = data.teams.filter((t) => t.status === "rejected");
   const closed = data.teams.filter((t) => t.status === "closed");
-  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Jamoa nomini bosib, tarkibini oching. Arizani tasdiqlang yoki rad eting; tasdiqlangan jamoani o‘chirish ham mumkin.</p>${importPanel()}<div class="sectionTitle"><h2>Tasdiqlash kutilayotgan arizalar (${pending.length})</h2></div>${pending.map(adminTeamCard).join("") || '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map(adminTeamCard).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}${rejected.length ? `<div class="sectionTitle"><h2>Rad etilgan arizalar (${rejected.length})</h2></div>${rejected.map(adminTeamCard).join("")}` : ""}${closed.length ? `<div class="sectionTitle"><h2>Faoliyati tugatilgan jamoalar (${closed.length})</h2></div>${closed.map(adminTeamCard).join("")}` : ""}</div>`;
+  const changes = data.teams.filter((t) => t.approved && t.change?.status === "pending");
+  return `<div class="card pad"><h2 style="margin-top:0">Jamoalarni boshqarish</h2><p class="notice">Jamoa nomini bosib, tarkibini oching. Arizani tasdiqlang yoki rad eting; tasdiqlangan jamoani o‘chirish ham mumkin.</p>${importPanel()}${changes.length ? `<div class="sectionTitle"><h2>Nom va tarkibni o‘zgartirish arizalari (${changes.length})</h2></div>${changes.map(changeRequestCard).join("")}` : ""}<div class="sectionTitle"><h2>Tasdiqlash kutilayotgan arizalar (${pending.length})</h2></div>${pending.map(adminTeamCard).join("") || '<div class="note">Yangi arizalar yo‘q.</div>'}<div class="sectionTitle"><h2>Tasdiqlangan jamoalar (${accepted.length})</h2></div>${accepted.map(adminTeamCard).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q.</div>'}${rejected.length ? `<div class="sectionTitle"><h2>Rad etilgan arizalar (${rejected.length})</h2></div>${rejected.map(adminTeamCard).join("")}` : ""}${closed.length ? `<div class="sectionTitle"><h2>Faoliyati tugatilgan jamoalar (${closed.length})</h2></div>${closed.map(adminTeamCard).join("")}` : ""}</div>`;
 }
 window.approveTeam = async (id) => {
   if (await mutate("approveTeam", { teamId: id })) flash("Jamoa tasdiqlandi");
@@ -2355,6 +2496,7 @@ const AUDIT_LABELS = {
   support: "Yordam murojaati", supportStatus: "Murojaatga javob", userDelete: "Foydalanuvchini o‘chirdi", userRole: "Rol o‘zgartirdi", passwordReset: "Parolni tikladi", site: "Asosiy oyna",
   addNews: "Yangilik qo‘shdi", removeNews: "Yangilikni o‘chirdi", toursCount: "Turlar soni", renameTour: "Tur nomi",
   appealEnabled: "Apellyatsiya oynasi", editTeam: "Jamoa nomi",
+  teamChange: "Jamoani o‘zgartirish arizasi", teamChangeCancel: "O‘zgartirish arizasini qaytardi", approveChange: "O‘zgartirishni tasdiqladi", rejectChange: "O‘zgartirishni rad etdi",
 };
 function monitoringAdmin() {
   const ranges = [["1h", "1 soat"], ["24h", "24 soat"], ["7d", "7 kun"], ["30d", "30 kun"]];
