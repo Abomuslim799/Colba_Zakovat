@@ -8,11 +8,11 @@
     "check": "node --check server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
+    "better-sqlite3": "^13.2.0",
     "compression": "^1.8.2",
-    "connect-pg-simple": "^10.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",

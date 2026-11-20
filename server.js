@@ -7,15 +7,14 @@ const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
 const session = require('express-session');
-const PgSession = require('connect-pg-simple')(session);
 const rateLimit = require('express-rate-limit');
-const { Pool } = require('pg');
+const store = require('./db');
 const monitor = require('./monitor');
 const teamImport = require('./teamImport');
 
 // ---------- Sozlamalar ----------
 const isProd = process.env.NODE_ENV === 'production';
-const DATABASE_URL = (process.env.DATABASE_URL || '').trim();
+const DATABASE_URL = (process.env.DATABASE_URL || '').trim(); // faqat eski Postgres'dan bir martalik ko'chirish uchun
 const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').toLowerCase().trim();
 const OWNER_PASSWORD = process.env.OWNER_PASSWORD || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
@@ -24,7 +23,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function checkConfig() {
   const problems = [];
-  if (!DATABASE_URL) problems.push('DATABASE_URL berilmagan (Railway: ${{Postgres.DATABASE_URL}})');
+  // Railway'da disk (volume) ulanmagan bo'lsa, har deploy'da ma'lumot o'chib ketadi
+  if (process.env.RAILWAY_ENVIRONMENT_NAME && !process.env.RAILWAY_VOLUME_MOUNT_PATH && !process.env.DATA_DIR)
+    problems.push('Servisga disk (Volume) ulanmagan. Railway: servis → Settings → Volume, Mount path: /data');
   if (isProd && SESSION_SECRET.length < 32) problems.push('SESSION_SECRET kamida 32 belgi bo‘lishi kerak');
   if (!EMAIL_RE.test(OWNER_EMAIL)) problems.push('OWNER_EMAIL berilmagan yoki noto‘g‘ri (sayt egasining emaili)');
   if (OWNER_PASSWORD.length < 8) problems.push('OWNER_PASSWORD kamida 8 belgi bo‘lishi kerak (sayt egasining paroli)');
@@ -35,10 +36,15 @@ function checkConfig() {
 }
 checkConfig();
 
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : undefined,
-});
+const db = store.open();
+const readState = () => {
+  const r = db.prepare('SELECT data, version FROM app_state WHERE id = 1').get();
+  return { data: JSON.parse(r.data), version: r.version };
+};
+const writeState = (s) => db.prepare('UPDATE app_state SET data = ?, version = version + 1 WHERE id = 1').run(JSON.stringify(s));
+const auditRow = (userId, action, detail) =>
+  db.prepare('INSERT INTO audit_log(user_id, action, detail) VALUES (?, ?, ?)').run(userId, action, JSON.stringify(detail || {}));
+const dropSessionsOf = (uid) => db.prepare("DELETE FROM session WHERE json_extract(sess, '$.uid') = ?").run(uid);
 
 const QUESTIONS = 36;
 const MAX_TOURS = 36;
@@ -84,42 +90,28 @@ function newTour(id) {
 }
 
 async function init() {
-  await pool.query(`CREATE TABLE IF NOT EXISTS app_state(
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    data JSONB NOT NULL,
-    version INTEGER NOT NULL DEFAULT 1)`);
-  await pool.query(`INSERT INTO app_state(id, data) VALUES (1, $1) ON CONFLICT DO NOTHING`, [JSON.stringify(seed())]);
-  await pool.query(`CREATE TABLE IF NOT EXISTS app_users(
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    picture TEXT,
-    role TEXT NOT NULL DEFAULT 'user',
-    first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-  await pool.query(`CREATE TABLE IF NOT EXISTS audit_log(
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT,
-    action TEXT NOT NULL,
-    detail JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at)`);
-  await pool.query(`CREATE TABLE IF NOT EXISTS team_photo(
-    id TEXT PRIMARY KEY, team_id TEXT NOT NULL, mime TEXT NOT NULL, data BYTEA NOT NULL,
-    bytes INTEGER NOT NULL, uploaded_by TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS team_photo_team ON team_photo(team_id, created_at)`);
-  // O'chirilgan jamoalarning suratlarini tozalash
-  const ids = (await pool.query('SELECT data FROM app_state WHERE id = 1')).rows[0].data.teams.map((t) => t.id);
-  await pool.query('DELETE FROM team_photo WHERE NOT (team_id = ANY($1::text[]))', [ids]);
-  const st = await pool.query('SELECT data FROM app_state WHERE id = 1');
-  await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(migrate(st.rows[0].data))]);
-  // Sayt egasi Railway'dagi OWNER_EMAIL / OWNER_PASSWORD dan yaratiladi (har ishga tushishda yangilanadi)
-  await pool.query(`UPDATE app_users SET role = 'user' WHERE role = 'owner' AND email <> $1`, [OWNER_EMAIL]);
-  await pool.query(
-    `INSERT INTO app_users(id, email, name, role, password_hash) VALUES ($1, $2, 'Sayt egasi', 'owner', $3)
-     ON CONFLICT (email) DO UPDATE SET role = 'owner', password_hash = EXCLUDED.password_hash`,
-    ['u' + crypto.randomUUID(), OWNER_EMAIL, await hashPassword(OWNER_PASSWORD)]);
+  const fresh = !db.prepare('SELECT 1 FROM app_state WHERE id = 1').get();
+  if (fresh && DATABASE_URL) {
+    console.log('Eski Postgres ma’lumotlari diskdagi bazaga ko‘chirilmoqda…');
+    const r = await store.importFromPostgres(db, DATABASE_URL);
+    console.log(r ? `Ko‘chirildi: ${r.users} foydalanuvchi, ${r.photos} surat, ${r.audit} jurnal yozuvi, ${r.sessions} sessiya`
+      : 'Postgres bo‘sh — yangi baza yaratildi');
+  }
+  db.prepare('INSERT INTO app_state(id, data) VALUES (1, ?) ON CONFLICT DO NOTHING').run(JSON.stringify(seed()));
+  const hash = await hashPassword(OWNER_PASSWORD);
+  db.transaction(() => {
+    // O'chirilgan jamoalarning suratlarini tozalash
+    const st = readState().data;
+    const ids = new Set(st.teams.map((t) => t.id));
+    for (const p of db.prepare('SELECT id, team_id FROM team_photo').all())
+      if (!ids.has(p.team_id)) db.prepare('DELETE FROM team_photo WHERE id = ?').run(p.id);
+    db.prepare('UPDATE app_state SET data = ? WHERE id = 1').run(JSON.stringify(migrate(st)));
+    // Sayt egasi Railway'dagi OWNER_EMAIL / OWNER_PASSWORD dan yaratiladi (har ishga tushishda yangilanadi)
+    db.prepare(`UPDATE app_users SET role = 'user' WHERE role = 'owner' AND email <> ?`).run(OWNER_EMAIL);
+    db.prepare(`INSERT INTO app_users(id, email, name, role, password_hash) VALUES (?, ?, 'Sayt egasi', 'owner', ?)
+      ON CONFLICT (email) DO UPDATE SET role = 'owner', password_hash = excluded.password_hash`)
+      .run('u' + crypto.randomUUID(), OWNER_EMAIL, hash);
+  })();
 }
 
 // ---------- Parollar (scrypt) ----------
@@ -150,7 +142,7 @@ app.use(monitor.requestTimer);
 app.use('/api/teams/:id/photos', express.json({ limit: '1.2mb' }));
 app.use(express.json({ limit: '80kb' }));
 app.use(session({
-  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: true }),
+  store: store.sessionStore(session, db),
   secret: SESSION_SECRET || 'local-dev-secret-only',
   resave: false,
   saveUninitialized: false,
@@ -164,8 +156,7 @@ const isStaff = (u) => u && (u.role === 'admin' || u.role === 'owner');
 app.use(async (req, res, next) => {
   if (!req.session.uid) return next();
   try {
-    const { rows } = await pool.query(`SELECT ${USER_FIELDS} FROM app_users WHERE id = $1`, [req.session.uid]);
-    req.user = rows[0] || null;
+    req.user = db.prepare(`SELECT ${USER_FIELDS} FROM app_users WHERE id = ?`).get(req.session.uid) || null;
     next();
   } catch (e) { next(e); }
 });
@@ -263,30 +254,25 @@ function similar(name, teams, exceptId) {
 // ---------- Holatni tranzaksiyada o'zgartirish ----------
 const bad = (msg, status = 400) => { const e = Error(msg); e.status = status; throw e; };
 
-async function update(req, res, action, detail, fn) {
-  const client = await pool.connect();
+function update(req, res, action, detail, fn) {
   try {
-    await client.query('BEGIN');
-    const { rows } = await client.query('SELECT data FROM app_state WHERE id = 1 FOR UPDATE');
-    const s = migrate(rows[0].data);
-    const msg = fn(s);
-    await client.query('UPDATE app_state SET data = $1, version = version + 1 WHERE id = 1', [JSON.stringify(s)]);
-    await client.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
-      [req.user.id, action, JSON.stringify(detail || {})]);
-    await client.query('COMMIT');
+    let msg, s;
+    db.transaction(() => {
+      s = migrate(readState().data);
+      msg = fn(s);
+      writeState(s);
+      auditRow(req.user.id, action, detail);
+    }).immediate();
     res.json({ ok: true, message: msg || 'Saqlandi', data: safeState(s, req.user) });
   } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
     if (!e.status) { console.error(e); monitor.recordError(e, req); }
     res.status(e.status || 500).json({ error: e.status ? e.message : 'Server xatoligi' });
-  } finally {
-    client.release();
   }
 }
 
 // ---------- API: kirish ----------
 app.get('/api/health', async (req, res) => {
-  try { await pool.query('SELECT 1'); res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); }
+  try { db.prepare('SELECT 1').get(); res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); }
 });
 app.get('/api/me', (req, res) => res.json({ user: req.user || null }));
 
@@ -295,8 +281,7 @@ let publicStatsCache = { at: 0, data: null };
 app.get('/api/public/stats', async (req, res, next) => {
   try {
     if (Date.now() - publicStatsCache.at > 60_000) {
-      const { rows } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-      const s = migrate(rows[0].data);
+      const s = migrate(readState().data);
       const teams = s.teams.filter((t) => t.approved);
       const published = s.tours.filter((t) => t.published);
       let answers = 0;
@@ -318,9 +303,9 @@ app.get('/api/public/stats', async (req, res, next) => {
 const authLimit = rateLimit({ windowMs: 15 * 60000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false,
   message: { error: 'Juda ko‘p urinish. 15 daqiqadan keyin qayta urinib ko‘ring.' } });
 
-const audit = (userId, action, detail) =>
-  pool.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)', [userId, action, JSON.stringify(detail || {})])
-    .catch((e) => console.error('audit', e.message));
+const audit = async (userId, action, detail) => {
+  try { auditRow(userId, action, detail); } catch (e) { console.error('audit', e.message); }
+};
 
 async function startSession(req, userId) {
   await new Promise((ok, fail) => req.session.regenerate((err) => (err ? fail(err) : ok())));
@@ -338,10 +323,9 @@ app.post('/api/auth/register', authLimit, async (req, res) => {
     if (password.length < 6 || password.length > 200) bad('Parol kamida 6 belgi bo‘lishi kerak');
     if (email === OWNER_EMAIL) bad('Bu email bilan ro‘yxatdan o‘tib bo‘lmaydi');
     const hash = await hashPassword(password);
-    const { rows } = await pool.query(
-      `INSERT INTO app_users(id, email, name, role, password_hash) VALUES ($1, $2, $3, 'user', $4)
-       ON CONFLICT (email) DO NOTHING RETURNING ${USER_FIELDS}`,
-      ['u' + crypto.randomUUID(), email, name, hash]);
+    const rows = db.prepare(
+      `INSERT INTO app_users(id, email, name, role, password_hash) VALUES (?, ?, ?, 'user', ?)
+       ON CONFLICT (email) DO NOTHING RETURNING ${USER_FIELDS}`).all('u' + crypto.randomUUID(), email, name, hash);
     if (!rows.length) bad('Bu email bilan allaqachon ro‘yxatdan o‘tilgan. “Kirish” bo‘limidan foydalaning.', 409);
     await audit(rows[0].id, 'register');
     await startSession(req, rows[0].id);
@@ -356,13 +340,13 @@ app.post('/api/auth/login', authLimit, async (req, res) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    const { rows } = await pool.query(`SELECT ${USER_FIELDS}, password_hash FROM app_users WHERE email = $1`, [email]);
+    const rows = db.prepare(`SELECT ${USER_FIELDS}, password_hash FROM app_users WHERE email = ?`).all(email);
     const ok = await checkPassword(password, rows[0]?.password_hash);
     if (!ok) {
       await audit(rows[0]?.id || null, 'login_failed', { email: email.slice(0, 160) });
       return res.status(401).json({ error: 'Email yoki parol noto‘g‘ri' });
     }
-    await pool.query('UPDATE app_users SET last_seen = NOW() WHERE id = $1', [rows[0].id]);
+    db.prepare(`UPDATE app_users SET last_seen = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`).run(rows[0].id);
     await audit(rows[0].id, 'login');
     const { password_hash, ...user } = rows[0];
     await startSession(req, user.id);
@@ -382,8 +366,8 @@ app.post('/api/logout', (req, res) => req.session.destroy(() => {
 // ---------- API: liga ma'lumoti ----------
 app.get('/api/state', requires('user'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT data, version FROM app_state WHERE id = 1');
-    res.json({ data: safeState(migrate(rows[0].data), req.user), version: rows[0].version });
+    const st = readState();
+    res.json({ data: safeState(migrate(st.data), req.user), version: st.version });
   } catch (e) { next(e); }
 });
 
@@ -391,8 +375,7 @@ app.get('/api/team/name-check', requires('user'), async (req, res, next) => {
   try {
     const name = String(req.query.name || '').slice(0, 80);
     const except = req.query.except ? String(req.query.except) : undefined;
-    const { rows } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-    res.json({ similar: similar(name, rows[0].data.teams, except) });
+    res.json({ similar: similar(name, readState().data.teams, except) });
   } catch (e) { next(e); }
 });
 
@@ -435,8 +418,7 @@ app.post('/api/teams/import', requires('staff'), async (req, res, next) => {
   };
   if (dryRun) {
     try {
-      const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-      return res.json({ preview: plan(migrate(st[0].data)) });
+      return res.json({ preview: plan(migrate(readState().data)) });
     } catch (e) { return next(e); }
   }
   let result;
@@ -461,8 +443,7 @@ app.post('/api/teams/:id/captain', requires('staff'), async (req, res, next) => 
     const userId = req.body.userId ? String(req.body.userId) : null;
     let u = null;
     if (userId) {
-      const { rows } = await pool.query(`SELECT ${USER_FIELDS} FROM app_users WHERE id = $1`, [userId]);
-      u = rows[0];
+      u = db.prepare(`SELECT ${USER_FIELDS} FROM app_users WHERE id = ?`).get(userId);
       if (!u) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
     }
     update(req, res, 'assignCaptain', { teamId: req.params.id, userId }, (s) => {
@@ -530,28 +511,25 @@ app.post('/api/teams/:id/profile', requires('user'), (req, res) => {
 
 app.get('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT id, created_at FROM team_photo WHERE team_id = $1 ORDER BY created_at DESC', [req.params.id]);
-    res.json({ photos: rows });
+    res.json({ photos: db.prepare('SELECT id, created_at FROM team_photo WHERE team_id = ? ORDER BY created_at DESC').all(req.params.id) });
   } catch (e) { next(e); }
 });
 
 app.get('/api/photos/:pid', requires('user'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT mime, data FROM team_photo WHERE id = $1', [req.params.pid]);
-    if (!rows[0]) return res.status(404).end();
-    res.set('Content-Type', rows[0].mime).set('Cache-Control', 'private, max-age=604800, immutable').send(rows[0].data);
+    const p = db.prepare('SELECT mime, data FROM team_photo WHERE id = ?').get(req.params.pid);
+    if (!p) return res.status(404).end();
+    res.set('Content-Type', p.mime).set('Cache-Control', 'private, max-age=604800, immutable').send(p.data);
   } catch (e) { next(e); }
 });
 
 async function syncPhotoCount(teamId) {
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM team_photo WHERE team_id = $1', [teamId]);
-  return rows[0].n;
+  return db.prepare('SELECT COUNT(*) AS n FROM team_photo WHERE team_id = ?').get(teamId).n;
 }
 
 app.post('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
   try {
-    const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-    const tm = st[0].data.teams.find((t) => t.id === req.params.id);
+    const tm = readState().data.teams.find((t) => t.id === req.params.id);
     if (!canEditTeam(tm, req.user)) return res.status(403).json({ error: 'Surat qo‘shishni faqat jamoa sardori yoki admin qila oladi' });
     const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body.image || ''));
     if (!m) return res.status(400).json({ error: 'Faqat JPG, PNG yoki WEBP surat yuklanadi' });
@@ -559,8 +537,8 @@ app.post('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
     if (buf.length > MAX_PHOTO_BYTES) return res.status(400).json({ error: 'Surat hajmi 700 KB dan oshmasin' });
     if ((await syncPhotoCount(tm.id)) >= MAX_PHOTOS) return res.status(400).json({ error: `Jamoada ko‘pi bilan ${MAX_PHOTOS} ta surat bo‘ladi` });
     const id = 'p' + crypto.randomUUID();
-    await pool.query('INSERT INTO team_photo(id, team_id, mime, data, bytes, uploaded_by) VALUES ($1, $2, $3, $4, $5, $6)',
-      [id, tm.id, m[1], buf, buf.length, req.user.id]);
+    db.prepare('INSERT INTO team_photo(id, team_id, mime, data, bytes, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(id, tm.id, m[1], buf, buf.length, req.user.id);
     const n = await syncPhotoCount(tm.id);
     update(req, res, 'teamPhoto', { teamId: tm.id, photo: id }, (s) => {
       const t = s.teams.find((x) => x.id === tm.id);
@@ -572,12 +550,11 @@ app.post('/api/teams/:id/photos', requires('user'), async (req, res, next) => {
 
 app.post('/api/photos/:pid/delete', requires('user'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT team_id FROM team_photo WHERE id = $1', [req.params.pid]);
-    if (!rows[0]) return res.status(404).json({ error: 'Surat topilmadi' });
-    const { rows: st } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-    const tm = st[0].data.teams.find((t) => t.id === rows[0].team_id);
+    const ph = db.prepare('SELECT team_id FROM team_photo WHERE id = ?').get(req.params.pid);
+    if (!ph) return res.status(404).json({ error: 'Surat topilmadi' });
+    const tm = readState().data.teams.find((t) => t.id === ph.team_id);
     if (!canEditTeam(tm, req.user)) return res.status(403).json({ error: 'Suratni faqat jamoa sardori yoki admin o‘chiradi' });
-    await pool.query('DELETE FROM team_photo WHERE id = $1', [req.params.pid]);
+    db.prepare('DELETE FROM team_photo WHERE id = ?').run(req.params.pid);
     const n = await syncPhotoCount(tm.id);
     update(req, res, 'teamPhotoDelete', { teamId: tm.id }, (s) => {
       const t = s.teams.find((x) => x.id === tm.id);
@@ -820,16 +797,14 @@ app.post('/api/support', requires('user'), (req, res) => {
 // ---------- API: monitoring (faqat ega) ----------
 app.get('/api/monitoring', requires('owner'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT data FROM app_state WHERE id = 1');
-    res.json(await monitor.report(pool, String(req.query.range || '24h'), rows[0].data));
+    res.json(monitor.report(String(req.query.range || '24h'), readState().data));
   } catch (e) { next(e); }
 });
 
 // ---------- API: foydalanuvchilar (faqat ega) ----------
 app.get('/api/users', requires('staff'), async (req, res, next) => {
   try {
-    const { rows } = await pool.query(`SELECT ${USER_FIELDS} FROM app_users ORDER BY last_seen DESC LIMIT 3000`);
-    res.json({ users: rows });
+    res.json({ users: db.prepare(`SELECT ${USER_FIELDS} FROM app_users ORDER BY last_seen DESC LIMIT 3000`).all() });
   } catch (e) { next(e); }
 });
 
@@ -837,47 +812,40 @@ app.post('/api/users/:id/role', requires('owner'), async (req, res, next) => {
   try {
     const role = req.body.role;
     if (!['user', 'admin'].includes(role)) return res.status(400).json({ error: 'Rol noto‘g‘ri' });
-    const r = await pool.query(`UPDATE app_users SET role = $1 WHERE id = $2 AND role <> 'owner' RETURNING id`, [role, req.params.id]);
-    if (!r.rowCount) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
-    await pool.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
-      [req.user.id, 'userRole', JSON.stringify({ target: req.params.id, role })]);
+    const r = db.prepare(`UPDATE app_users SET role = ? WHERE id = ? AND role <> 'owner'`).run(role, req.params.id);
+    if (!r.changes) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
+    auditRow(req.user.id, 'userRole', { target: req.params.id, role });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
 // Foydalanuvchini o'chirish: ega — istalgan (o'zidan tashqari), admin — faqat oddiy foydalanuvchini.
 // Tasdiqlangan jamoasi bo'lsa avval jamoa o'chiriladi yoki faoliyati tugatiladi; kutilayotgan arizasi bekor qilinadi.
-app.post('/api/users/:id/delete', requires('staff'), async (req, res, next) => {
-  const client = await pool.connect();
+app.post('/api/users/:id/delete', requires('staff'), (req, res, next) => {
   try {
-    await client.query('BEGIN');
-    const { rows } = await client.query(`SELECT ${USER_FIELDS} FROM app_users WHERE id = $1 FOR UPDATE`, [req.params.id]);
-    const target = rows[0];
-    if (!target) bad('Foydalanuvchi topilmadi', 404);
-    if (target.id === req.user.id) bad('O‘zingizni o‘chira olmaysiz');
-    if (target.role === 'owner') bad('Sayt egasini o‘chirib bo‘lmaydi', 403);
-    if (target.role === 'admin' && req.user.role !== 'owner') bad('Adminni faqat sayt egasi o‘chiradi', 403);
-    const st = await client.query('SELECT data FROM app_state WHERE id = 1 FOR UPDATE');
-    const s = migrate(st.rows[0].data);
-    const approved = s.teams.find((t) => t.createdBy === target.id && t.status === 'approved');
-    if (approved) bad(`Foydalanuvchining “${approved.name}” jamoasi faol. Avval “Jamoalar” bo‘limida jamoani o‘chiring.`);
-    const pending = s.teams.filter((t) => t.createdBy === target.id && t.status === 'pending');
-    if (pending.length) {
-      s.teams = s.teams.filter((t) => !pending.includes(t));
-      await client.query('UPDATE app_state SET data = $1, version = version + 1 WHERE id = 1', [JSON.stringify(s)]);
-    }
-    await client.query(`DELETE FROM session WHERE sess ->> 'uid' = $1`, [target.id]);
-    await client.query('DELETE FROM app_users WHERE id = $1', [target.id]);
-    await client.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
-      [req.user.id, 'userDelete', JSON.stringify({ target: target.id, name: target.name, email: target.email })]);
-    await client.query('COMMIT');
+    let target, pending = [];
+    db.transaction(() => {
+      target = db.prepare(`SELECT ${USER_FIELDS} FROM app_users WHERE id = ?`).get(req.params.id);
+      if (!target) bad('Foydalanuvchi topilmadi', 404);
+      if (target.id === req.user.id) bad('O‘zingizni o‘chira olmaysiz');
+      if (target.role === 'owner') bad('Sayt egasini o‘chirib bo‘lmaydi', 403);
+      if (target.role === 'admin' && req.user.role !== 'owner') bad('Adminni faqat sayt egasi o‘chiradi', 403);
+      const s = migrate(readState().data);
+      const approved = s.teams.find((t) => t.createdBy === target.id && t.status === 'approved');
+      if (approved) bad(`Foydalanuvchining “${approved.name}” jamoasi faol. Avval “Jamoalar” bo‘limida jamoani o‘chiring.`);
+      pending = s.teams.filter((t) => t.createdBy === target.id && t.status === 'pending');
+      if (pending.length) {
+        s.teams = s.teams.filter((t) => !pending.includes(t));
+        writeState(s);
+      }
+      dropSessionsOf(target.id);
+      db.prepare('DELETE FROM app_users WHERE id = ?').run(target.id);
+      auditRow(req.user.id, 'userDelete', { target: target.id, name: target.name, email: target.email });
+    }).immediate();
     res.json({ ok: true, message: `“${target.name}” o‘chirildi${pending.length ? ' (kutilayotgan arizasi bekor qilindi)' : ''}` });
   } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
     if (!e.status) return next(e);
     res.status(e.status).json({ error: e.message });
-  } finally {
-    client.release();
   }
 });
 
@@ -885,14 +853,23 @@ app.post('/api/users/:id/password', requires('owner'), async (req, res, next) =>
   try {
     const password = String(req.body.password || '');
     if (password.length < 6 || password.length > 200) return res.status(400).json({ error: 'Parol kamida 6 belgi bo‘lishi kerak' });
-    const r = await pool.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2 AND role <> 'owner' RETURNING id`,
-      [await hashPassword(password), req.params.id]);
-    if (!r.rowCount) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
-    await pool.query(`DELETE FROM session WHERE sess ->> 'uid' = $1`, [req.params.id]);
-    await pool.query('INSERT INTO audit_log(user_id, action, detail) VALUES ($1, $2, $3)',
-      [req.user.id, 'passwordReset', JSON.stringify({ target: req.params.id })]);
+    const hash = await hashPassword(password);
+    const r = db.prepare(`UPDATE app_users SET password_hash = ? WHERE id = ? AND role <> 'owner'`).run(hash, req.params.id);
+    if (!r.changes) return res.status(400).json({ error: 'Foydalanuvchi topilmadi yoki sayt egasi' });
+    dropSessionsOf(req.params.id);
+    auditRow(req.user.id, 'passwordReset', { target: req.params.id });
     res.json({ ok: true });
   } catch (e) { next(e); }
+});
+
+// Zaxira nusxa: butun baza bitta fayl (faqat ega). Disk bitta joyda — vaqti-vaqti bilan yuklab olib turish tavsiya etiladi.
+app.get('/api/backup', requires('owner'), async (req, res, next) => {
+  const tmp = path.join(store.DATA_DIR, `backup-${Date.now()}.db`);
+  try {
+    await db.backup(tmp);
+    auditRow(req.user.id, 'backup', {});
+    res.download(tmp, `colba-zakovat-${new Date().toISOString().slice(0, 10)}.db`, () => require('fs').rm(tmp, { force: true }, () => {}));
+  } catch (e) { require('fs').rm(tmp, { force: true }, () => {}); next(e); }
 });
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'API topilmadi' }));
@@ -911,9 +888,9 @@ app.use((err, req, res, next) => {
 });
 
 init()
-  .then(() => monitor.start(pool))
+  .then(() => monitor.start(db, store.DB_FILE))
   .then(() => app.listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('COLBA server ishga tushdi')))
   .catch((e) => {
-    console.error('Ma’lumotlar bazasiga ulanib bo‘lmadi. DATABASE_URL va PGSSL ni tekshiring.\n', e.message);
+    console.error('Ma’lumotlar bazasini ochib bo‘lmadi (disk /data yoki eski Postgres’dan ko‘chirish).\n', e.message);
     process.exit(1);
   });
