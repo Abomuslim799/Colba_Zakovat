@@ -8,10 +8,10 @@
     "check": "node --check server.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "dependencies": {
-    "better-sqlite3": "^13.2.0",
+    "better-sqlite3": "^12.11.1",
     "compression": "^1.8.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
