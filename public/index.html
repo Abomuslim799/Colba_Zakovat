@@ -169,6 +169,7 @@ body.is-auth #app.shell{max-width:none;padding:0}
 
 
 
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -383,30 +384,52 @@ main.shell{overflow-x:clip}
 .chg-cols>div{min-width:0}
 .chg-box .chg-name strong,.chg-admin .chg-name strong{display:inline;margin:0}
 
-/* Randomayzer */
-.rz-stage{background:radial-gradient(120% 90% at 50% 0%,#164a37,#0b2a1f 70%);border-radius:18px;padding:20px;color:#f3f6f1;display:flex;flex-direction:column;gap:18px}
-.rz-stage:fullscreen{border-radius:0;padding:5vh 5vw;justify-content:center}
-.rz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:8px}
-@media (max-width:640px){.rz-stage{padding:14px}.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:10px}}
-.rz-stage:fullscreen .rz-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-.rz-name{font:600 14px/1.25 var(--body,inherit);text-align:left;padding:11px 13px;border-radius:12px;border:1px solid rgba(243,246,241,.14);background:rgba(243,246,241,.04);color:rgba(243,246,241,.45);cursor:pointer;transition:background .12s,color .12s,border-color .12s,transform .12s;min-width:0;overflow-wrap:anywhere}
-.rz-stage:fullscreen .rz-name{font-size:22px;padding:16px 18px}
-.rz-name.on{color:#f3f6f1;border-color:rgba(243,246,241,.32);background:rgba(243,246,241,.09)}
-.rz-name.hot{background:var(--brass,#e2b44b);color:#1b1404;border-color:var(--brass,#e2b44b);transform:scale(1.04)}
-.rz-name.won{background:var(--brass,#e2b44b);color:#1b1404;border-color:#fff3c8;box-shadow:0 0 0 3px rgba(226,180,75,.35),0 0 28px rgba(226,180,75,.45)}
-.rz-name:disabled{cursor:default}
-.rz-result{min-height:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
-.rz-result:empty{display:none}
-.rz-result .rz-label{font-size:13px;color:rgba(243,246,241,.7)}
-.rz-result strong{font:800 clamp(28px,5vw,56px)/1.1 var(--display,inherit);color:var(--brass,#e2b44b);overflow-wrap:anywhere}
-.rz-stage:fullscreen .rz-result strong{font-size:clamp(48px,8vw,110px)}
-.rz-result .rz-meta{font-size:12px;color:rgba(243,246,241,.55)}
-.rz-result.pop strong{animation:rzPop .6s cubic-bezier(.2,1.4,.4,1)}
-@keyframes rzPop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+/* Qur'a */
+.rz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:8px}
+.rz-name{font:600 14px/1.25 inherit;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(14,59,44,.14);background:rgba(255,255,255,.6);color:#6b7d74;cursor:pointer;transition:background .15s,color .15s,border-color .15s;min-width:0;overflow-wrap:anywhere;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.rz-name small{font-size:11px;opacity:.7;font-weight:500}
+.rz-name.on{background:#145a3e;border-color:#145a3e;color:#fff}
+.rz-name:disabled{cursor:default;opacity:.8}
+.rz-stage{margin-top:14px;background:radial-gradient(110% 80% at 50% 10%,#16302a 0%,#0a1512 60%,#050a09 100%);border-radius:20px;padding:18px;color:#f3f6f1;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.rz-stage:fullscreen{border-radius:0;padding:3vh 4vw;justify-content:center}
 .rz-actions{gap:8px;flex-wrap:wrap}
 .rz-actions .field{flex:1 1 260px;min-width:0;background:rgba(255,255,255,.95)}
-.rz-go{flex:0 0 auto;min-width:140px}
-@media (prefers-reduced-motion:reduce){.rz-name,.rz-result.pop strong{transition:none;animation:none}}
+.rz-go{flex:0 0 auto;min-width:150px}
+.qr-scene{--d:min(78vw,500px);position:relative;height:calc(var(--d) * 1.12);perspective:1100px;perspective-origin:50% 30%;display:grid;place-items:center}
+.rz-stage:fullscreen .qr-scene{--d:min(70vh,78vw);height:calc(var(--d) * 1.1)}
+.qr-cam{position:relative;width:var(--d);height:var(--d);transform-style:preserve-3d;transform:rotateX(var(--tilt,0deg)) scale(var(--zoom,1))}
+.qr-table{position:absolute;inset:0;border-radius:50%;transform:rotate(var(--rot,0deg));transform-style:preserve-3d}
+.qr-felt{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1f6a4a 0%,#124632 55%,#0b2c20 100%);box-shadow:0 0 0 6px #b98a2e,0 0 0 9px #6e4f15,0 0 0 10px rgba(255,226,160,.4),0 30px 60px rgba(0,0,0,.6),inset 0 0 60px rgba(0,0,0,.45)}
+.qr-ticks i{position:absolute;left:50%;top:50%;width:1px;height:calc(var(--d) * .5);background:linear-gradient(rgba(226,180,75,0),rgba(226,180,75,.35) 30%,rgba(226,180,75,.15));transform-origin:0 0;transform:rotate(calc(var(--a) + 180deg))}
+.qr-hub{position:absolute;left:50%;top:50%;width:calc(var(--d) * .2);height:calc(var(--d) * .2);margin:calc(var(--d) * -.1) 0 0 calc(var(--d) * -.1);border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9b0,#c9952f 55%,#6b4a12);box-shadow:0 0 0 3px rgba(0,0,0,.35),inset 0 0 0 calc(var(--d) * .035) rgba(0,0,0,.18)}
+.qr-slot{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -.355))}
+.qr-env{--w:clamp(44px,calc(var(--d) * 1.85 / var(--n)),124px);position:absolute;left:calc(var(--w) * -.5);top:calc(var(--w) * -.32);width:var(--w);height:calc(var(--w) * .64);border-radius:4px;background:linear-gradient(160deg,#fbf7ec,#e7dec7);box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;overflow:hidden;color:#3d2f12;transition:opacity .4s,box-shadow .3s,transform .4s}
+.qr-env span{position:relative;z-index:1;padding:calc(var(--w) * .2) 4px 2px;font:700 clamp(8px,calc(var(--w) * .13),15px)/1.1 inherit;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.qr-flap{position:absolute;left:0;right:0;top:0;height:58%;background:linear-gradient(#eadfc4,#d9cba6);clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:50% 0;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.qr-flap::after{content:"";position:absolute;left:50%;top:62%;width:16%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,#d34b4b,#7c1717)}
+.qr-slot.dim .qr-env{opacity:.35}
+.qr-slot.won .qr-env{box-shadow:0 0 0 2px #ffe2a0,0 0 24px 4px rgba(255,214,120,.65)}
+.qr-slot.lifted .qr-env{opacity:0}
+.qr-pointer{position:absolute;left:50%;top:calc(var(--d) * -.04);width:calc(var(--d) * .06);height:calc(var(--d) * .07);transform:translate(-50%,-100%);background:linear-gradient(#ffe7a8,#c9952f);clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));z-index:3}
+.qr-reveal{position:absolute;inset:0;display:none;place-items:center;pointer-events:none;z-index:5}
+.qr-reveal.show{display:grid}
+.qr-big{position:relative;width:min(84%,380px);display:grid;justify-items:center;animation:qrRise .65s cubic-bezier(.2,.9,.25,1) both}
+.qr-env.big{--w:min(100%,380px);position:relative;left:auto;top:auto;width:100%;height:auto;aspect-ratio:1.6;z-index:2;box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 0 2px #ffe2a0;overflow:visible}
+.qr-env.big span{font-size:clamp(14px,3.4vw,22px);padding-top:38%;color:#5b4718}
+.qr-env.big .qr-flap{transition:transform .6s cubic-bezier(.5,0,.3,1) .05s}
+.qr-reveal.open .qr-env.big .qr-flap{transform:rotateX(180deg);z-index:0}
+.qr-card{position:absolute;left:7%;right:7%;bottom:12%;z-index:1;background:#fffdf6;border-radius:8px;padding:16px 14px 18px;text-align:center;color:#1d2a24;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:4px;transform:translateY(0);opacity:0;transition:transform .9s cubic-bezier(.2,.9,.25,1) .45s,opacity .2s .45s,z-index 0s 1.2s}
+.qr-reveal.open .qr-card{transform:translateY(-78%);opacity:1;z-index:3}
+.qr-card .qr-label{font-size:12px;color:#7a6a45}
+.qr-card strong{font:800 clamp(22px,4.6vw,40px)/1.1 var(--display,inherit);color:#145a3e;overflow-wrap:anywhere}
+.qr-card .qr-team{font-size:13px;color:#6b7d74}
+.rz-stage:fullscreen .qr-big{width:min(60vh,560px)}
+.rz-stage:fullscreen .qr-card strong{font-size:clamp(36px,6vh,72px)}
+.qr-reveal.still .qr-big,.qr-reveal.still .qr-card,.qr-reveal.still .qr-flap{animation:none!important;transition:none!important}
+@keyframes qrRise{from{transform:translateY(calc(var(--d) * -.355)) scale(.3);opacity:.6}to{transform:none;opacity:1}}
+@media (max-width:640px){.rz-stage{padding:12px}.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:9px 10px}.qr-scene{--d:min(84vw,420px)}}
+@media (prefers-reduced-motion:reduce){.qr-big,.qr-card,.qr-flap,.qr-env{animation:none!important;transition:none!important}}
+
 </style></head><body><header class="top"><div class="shell topin"><a class="brand" href="#" onclick="go('home');return false"><img class="logo" src="/logo.png" alt="COLBA"><div><div class="brandname">COLBA <span class="highlight">ZAKOVAT</span></div><span class="subbrand">LIGA PLATFORMASI</span></div></a><nav class="nav" id="nav"></nav><div class="tools" id="tools"></div></div></header><main class="shell" id="app"></main><footer class="shell foot">COLBA Zakovat Ligasi · Intellektual musobaqalar boshqaruv tizimi<br>G‘oya muallifi va platforma yaratuvchisi: <strong>Adhamjon Zokirjanov</strong></footer><div id="modalRoot"></div>
 <script>
 "use strict";
@@ -2000,7 +2023,7 @@ function adminPage() {
   const items = [
     ["scores", "Javoblarni kiritish"],
     ["participation", "Tur jamoalari"],
-    ["random", "Randomayzer"],
+    ["random", "Qur’a"],
     ["teamsadmin", "Jamoalar"],
     ["appealsadmin", "Apellyatsiyalar"],
     ["supportadmin", `Yordam${data.support.filter((x) => x.status === APPEAL_SENT).length ? " (" + data.support.filter((x) => x.status === APPEAL_SENT).length + ")" : ""}`],
@@ -2031,11 +2054,13 @@ window.adminTab = async (k) => {
   draw();
 };
 
-// ---------- Randomayzer: belgilangan jamoalardan bittasini tasodifiy tanlash ----------
-// Tanlov serverda bajariladi (crypto.randomInt) va tarixga yoziladi; ekrandagi aylanish faqat ko'rsatish uchun.
+// ---------- Qur'a: belgilangan jamoalar a'zolaridan bitta ishtirokchini tasodifiy tanlash ----------
+// Tanlov serverda bajariladi (crypto.randomInt) va tarixga yoziladi; stol animatsiyasi faqat natijani ko'rsatadi.
 let drawSel = null,
   drawBusy = false,
-  drawLast = null;
+  drawLast = null,
+  drawSkip = new Set(), // "teamId|ism" — oldin tanlanib, chiqarib qo'yilgan ishtirokchilar
+  drawRot = 0; // stolning joriy burilishi (gradus)
 const drawTeams = () => data.teams.filter((tm) => tm.approved && tm.status === "approved").sort((a, b) => a.name.localeCompare(b.name, "uz"));
 function drawSelSet() {
   const ok = new Set(drawTeams().map((t) => t.id));
@@ -2043,40 +2068,61 @@ function drawSelSet() {
   for (const id of [...drawSel]) if (!ok.has(id)) drawSel.delete(id);
   return drawSel;
 }
+const drawSelTeams = () => drawTeams().filter((t) => drawSelSet().has(t.id));
+const drawPeople = () => drawSelTeams().reduce((n, t) => n + members(t).filter((m) => !drawSkip.has(t.id + "|" + m)).length, 0);
+function quraTable(teams) {
+  const n = Math.max(teams.length, 1);
+  const envs = teams
+    .map((t, i) => `<div class="qr-slot" style="--a:${(360 / n) * i}deg" data-id="${t.id}"><div class="qr-env"><i class="qr-flap"></i><span>${h(t.name)}</span></div></div>`)
+    .join("");
+  const ticks = Array.from({ length: n }, (_, i) => `<i style="--a:${(360 / n) * (i + 0.5)}deg"></i>`).join("");
+  return `<div class="qr-scene" id="qrScene" style="--n:${n}"><div class="qr-cam" id="qrCam" style="--tilt:${drawLast ? 0 : 58}deg;--zoom:${drawLast ? 1 : 0.86}"><div class="qr-pointer" aria-hidden="true"></div><div class="qr-table" id="qrTable" style="--rot:${drawRot}deg"><div class="qr-felt"></div><div class="qr-ticks">${ticks}</div>${envs}<div class="qr-hub"></div></div></div><div class="qr-reveal" id="qrReveal" aria-live="assertive"></div></div>`;
+}
 function randomAdmin() {
   const teams = drawTeams(),
     sel = drawSelSet(),
-    t = selectedTour();
+    t = selectedTour(),
+    chosen = drawSelTeams();
   const hist = (data.draws || []).slice(0, 12);
-  const chip = (tm) =>
-    `<button class="rz-name${sel.has(tm.id) ? " on" : ""}${drawLast?.picked.id === tm.id ? " won" : ""}" data-id="${tm.id}" onclick="drawToggle('${tm.id}')" ${drawBusy ? "disabled" : ""} aria-pressed="${sel.has(tm.id)}">${h(tm.name)}</button>`;
-  return `<div class="card pad"><div class="row between" style="flex-wrap:wrap;gap:10px"><div><h2 style="margin:0">Randomayzer</h2><p class="notice" style="margin:4px 0 0">Jamoalarni belgilang — tizim ular orasidan bittasini tasodifiy tanlaydi. Tanlov serverda bajariladi va tarixga yoziladi, uni qayta o‘zgartirib bo‘lmaydi.</p></div><button class="pill" onclick="drawFullscreen()" title="Proyektor uchun">⛶ To‘liq ekran</button></div>
-<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 10px"><button class="smallbtn soft" onclick="drawPick('all')">Hammasi</button><button class="smallbtn pill" onclick="drawPick('none')">Tozalash</button>${t && t.activeTeams?.length ? `<button class="smallbtn pill" onclick="drawPick('tour')">${h(t.title)} jamoalari (${t.activeTeams.length})</button>` : ""}<span class="notice" style="align-self:center">Belgilangan: <strong id="rzCount">${sel.size}</strong> / ${teams.length}</span></div>
-<div class="rz-stage" id="rzStage"><div class="rz-grid" id="rzGrid">${teams.map(chip).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q</div>'}</div>
-<div class="rz-result" id="rzResult" aria-live="assertive">${drawLast ? `<span class="rz-label">${h(drawLast.title || "Tanlangan jamoa")}</span><strong>${h(drawLast.picked.name)}</strong><span class="rz-meta">${drawLast.pool.length} ta jamoadan</span>` : ""}</div>
-<div class="row rz-actions"><input class="field" id="rzTitle" maxlength="120" placeholder="Nima uchun tanlanmoqda (ixtiyoriy), masalan: birinchi bo‘lib javob beradi" ${drawBusy ? "disabled" : ""}><button class="primary rz-go" id="rzGo" onclick="drawRun()" ${drawBusy || sel.size < 2 ? "disabled" : ""}>🎲 Tanlash</button>${drawLast && !drawBusy && sel.has(drawLast.picked.id) && sel.size > 2 ? `<button class="pill" onclick="drawAgainWithout()">Uni chiqarib, yana tanlash</button>` : ""}</div></div></div>
-<div class="card pad" style="margin-top:14px"><h3 class="h3" style="margin-top:0">Tanlovlar tarixi</h3>${
+  const chip = (tm) => `<button class="rz-name${sel.has(tm.id) ? " on" : ""}" onclick="drawToggle('${tm.id}')" ${drawBusy ? "disabled" : ""} aria-pressed="${sel.has(tm.id)}">${h(tm.name)} <small>${members(tm).length}</small></button>`;
+  const people = drawPeople();
+  return `<div class="card pad"><div class="row between" style="flex-wrap:wrap;gap:10px"><div><h2 style="margin:0">Qur’a</h2><p class="notice" style="margin:4px 0 0">Jamoalarni belgilang — qur’a ularning barcha a’zolari orasidan bitta ishtirokchini tanlaydi (har bir ishtirokchining imkoniyati teng). Tanlov serverda bajariladi va tarixga yoziladi.</p></div><button class="pill" onclick="drawFullscreen()" title="Proyektor uchun">⛶ To‘liq ekran</button></div>
+<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 10px"><button class="smallbtn soft" onclick="drawPick('all')">Hammasi</button><button class="smallbtn pill" onclick="drawPick('none')">Tozalash</button>${t && t.activeTeams?.length ? `<button class="smallbtn pill" onclick="drawPick('tour')">${h(t.title)} jamoalari (${t.activeTeams.length})</button>` : ""}<span class="notice" style="align-self:center">Jamoa: <strong>${sel.size}</strong> · ishtirokchi: <strong>${people}</strong>${drawSkip.size ? ` · chiqarilgan: ${drawSkip.size} <button class="linkbtn" onclick="drawResetSkip()">qaytarish</button>` : ""}</span></div>
+<div class="rz-grid">${teams.map(chip).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q</div>'}</div></div>
+<div class="rz-stage" id="rzStage">${chosen.length ? quraTable(chosen) : '<div class="empty" style="color:#cfe0d6">Qur’a uchun jamoalarni belgilang</div>'}
+<div class="row rz-actions"><input class="field" id="rzTitle" maxlength="120" placeholder="Nima uchun tanlanmoqda (ixtiyoriy), masalan: savolga javob beradi" ${drawBusy ? "disabled" : ""}><button class="primary rz-go" id="rzGo" onclick="drawRun()" ${drawBusy || people < 2 ? "disabled" : ""}>Qur’a tashlash</button>${drawLast && !drawBusy && people > 2 ? `<button class="pill" onclick="drawAgainWithout()">Uni chiqarib, yana tashlash</button>` : ""}</div></div>
+<div class="card pad" style="margin-top:14px"><h3 class="h3" style="margin-top:0">Qur’alar tarixi</h3>${
     hist.length
-      ? `<div class="tablewrap"><table class="datatable"><thead><tr><th>Vaqt</th><th>Maqsad</th><th>Tanlandi</th><th>Nechtadan</th><th>Kim</th></tr></thead><tbody>${hist.map((d) => `<tr><td style="white-space:nowrap">${fmtDate(d.at)}</td><td>${h(d.title || "—")}</td><td><strong>${h(d.picked.name)}</strong></td><td title="${h(d.pool.map((x) => x.name).join(", "))}">${d.pool.length}</td><td>${h(d.by)}</td></tr>`).join("")}</tbody></table></div>`
-      : '<p class="notice">Hali tanlov o‘tkazilmagan.</p>'
+      ? `<div class="tablewrap"><table class="datatable"><thead><tr><th>Vaqt</th><th>Maqsad</th><th>Ishtirokchi</th><th>Jamoa</th><th>Nechtadan</th><th>Kim</th></tr></thead><tbody>${hist.map((d) => `<tr><td style="white-space:nowrap">${fmtDate(d.at)}</td><td>${h(d.title || "—")}</td><td><strong>${h(d.picked.member || "—")}</strong></td><td>${h(d.picked.name)}</td><td title="${h(d.pool.map((x) => x.name).join(", "))}">${d.people ? d.people + " kishi" : d.pool.length + " jamoa"}</td><td>${h(d.by)}</td></tr>`).join("")}</tbody></table></div>`
+      : '<p class="notice">Hali qur’a tashlanmagan.</p>'
   }</div>`;
+}
+function drawRevealHTML(d) {
+  return `<div class="qr-big"><div class="qr-card"><span class="qr-label">${h(d.title || "Qur’a natijasi")}</span><strong>${h(d.picked.member)}</strong><span class="qr-team">${h(d.picked.name)}</span></div><div class="qr-env big"><i class="qr-flap"></i><span>${h(d.picked.name)}</span></div></div>`;
 }
 window.drawToggle = (id) => {
   if (drawBusy) return;
   const sel = drawSelSet();
   sel.has(id) ? sel.delete(id) : sel.add(id);
+  drawLast = null;
   draw();
 };
 window.drawPick = (k) => {
+  if (drawBusy) return;
   const sel = drawSelSet();
   sel.clear();
   if (k === "all") drawTeams().forEach((t) => sel.add(t.id));
   if (k === "tour") (selectedTour()?.activeTeams || []).forEach((id) => drawTeams().some((t) => t.id === id) && sel.add(id));
   drawLast = null;
+  drawSkip.clear();
+  draw();
+};
+window.drawResetSkip = () => {
+  drawSkip.clear();
   draw();
 };
 window.drawAgainWithout = () => {
-  drawSelSet().delete(drawLast.picked.id);
+  drawSkip.add(drawLast.picked.id + "|" + drawLast.picked.member);
   const title = $("rzTitle")?.value || "";
   drawLast = null;
   draw();
@@ -2090,64 +2136,82 @@ window.drawFullscreen = () => {
   else el.requestFullscreen?.().catch(() => {});
 };
 window.drawRun = async () => {
-  const sel = drawSelSet();
-  if (drawBusy || sel.size < 2) return;
+  if (drawBusy || drawPeople() < 2) return;
   const title = ($("rzTitle")?.value || "").trim();
+  const teams = drawSelTeams();
   drawBusy = true;
   drawLast = null;
-  document.querySelectorAll(".rz-name").forEach((b) => b.classList.remove("won", "hot"));
-  $("rzResult").innerHTML = "";
-  $("rzGo").disabled = true;
-  document.querySelectorAll(".rz-name, #rzTitle").forEach((b) => (b.disabled = true));
+  document.querySelectorAll(".rz-name, #rzTitle, #rzGo").forEach((b) => (b.disabled = true));
+  $("qrScene")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
   let x;
   try {
-    x = await api("/api/action", { action: "draw", payload: { teamIds: [...sel], title } });
+    x = await api("/api/action", { action: "draw", payload: { teamIds: teams.map((t) => t.id), exclude: [...drawSkip], title } });
   } catch (e) {
     drawBusy = false;
     flash(e.message, true);
     return draw();
   }
   const d = x.data.draws[0];
-  // aylanish: belgilanganlar bo'ylab yugurib, sekinlashib g'olibda to'xtaydi (~3.6 s)
-  const btns = [...document.querySelectorAll(".rz-name.on")];
-  const order = btns.map((b) => b.dataset.id);
-  const target = order.indexOf(d.picked.id);
-  const n = order.length;
-  const steps = reduceMotion() ? 0 : n * 2 + ((target - (n * 2) % n + n) % n) + Math.max(0, 14 - n * 2);
-  let k = 0,
-    pos = 0;
-  const T = 3600,
-    delays = Array.from({ length: steps }, (_, i) => i / Math.max(1, steps - 1));
-  const sum = delays.reduce((a, u) => a + (0.15 + u * u * 1.85), 0);
-  const show = (i) => {
-    btns.forEach((b) => b.classList.remove("hot"));
-    btns[i]?.classList.add("hot");
-  };
-  const finish = () => {
+  const done = () => {
     data = x.data;
     normalize();
     drawLast = d;
     drawBusy = false;
     draw();
-    const r = $("rzResult");
-    if (r) {
-      r.classList.remove("pop");
-      void r.offsetWidth;
-      r.classList.add("pop");
+    const rv = $("qrReveal");
+    if (rv) {
+      rv.innerHTML = drawRevealHTML(d);
+      rv.classList.add("show", "open", "still");
     }
+    document.querySelector(`.qr-slot[data-id="${d.picked.id}"]`)?.classList.add("won");
     if ($("rzTitle")) $("rzTitle").value = title;
   };
-  const tick = () => {
-    if (k >= steps) return finish();
-    show(pos);
-    const u = k / Math.max(1, steps - 1);
-    k++;
-    pos = (pos + 1) % n;
-    setTimeout(tick, (T * (0.15 + u * u * 1.85)) / sum);
+  const cam = $("qrCam"),
+    tbl = $("qrTable"),
+    scene = $("qrScene"),
+    rv = $("qrReveal");
+  if (!cam || !tbl || reduceMotion()) return done();
+  scene.classList.remove("revealed");
+  rv.className = "qr-reveal";
+  rv.innerHTML = "";
+  document.querySelectorAll(".qr-slot").forEach((e) => e.classList.remove("won", "dim"));
+  // Yakuniy burchak: tanlangan konvert tepadagi ko'rsatkich ostida to'xtaydi (soat strelkasi bo'yicha, kamida 3 aylana)
+  const i = teams.findIndex((t) => t.id === d.picked.id),
+    n = teams.length,
+    a = (360 / n) * i;
+  const r0 = drawRot,
+    base = (((-a - r0) % 360) + 360) % 360,
+    r1 = r0 + base + 360 * (n > 1 ? 3 : 2);
+  const tilt0 = parseFloat(cam.style.getPropertyValue("--tilt")) || 0,
+    zoom0 = parseFloat(cam.style.getPropertyValue("--zoom")) || 1;
+  const T_TILT = 1700, T_SPIN = 5200, T0 = performance.now();
+  const ease = (u) => 1 - Math.pow(1 - u, 3.2),
+    eio = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+  const frame = (now) => {
+    if (!$("qrTable")) return done();
+    const t = now - T0,
+      ut = Math.min(1, t / T_TILT),
+      us = Math.min(1, Math.max(0, (t - 250) / T_SPIN));
+    cam.style.setProperty("--tilt", (tilt0 * (1 - eio(ut))).toFixed(2) + "deg");
+    cam.style.setProperty("--zoom", (zoom0 + (1 - zoom0) * eio(ut)).toFixed(3));
+    drawRot = r0 + (r1 - r0) * ease(us);
+    tbl.style.setProperty("--rot", drawRot.toFixed(2) + "deg");
+    if (us < 1) return requestAnimationFrame(frame);
+    drawRot = r1 % 360;
+    tbl.style.setProperty("--rot", drawRot + "deg");
+    // tanlangan konvert ko'tariladi, markazga keladi va ochiladi
+    const slot = document.querySelector(`.qr-slot[data-id="${d.picked.id}"]`);
+    slot?.classList.add("won");
+    document.querySelectorAll(".qr-slot:not(.won)").forEach((e) => e.classList.add("dim"));
+    setTimeout(() => {
+      rv.innerHTML = drawRevealHTML(d);
+      rv.classList.add("show");
+      slot?.classList.add("lifted");
+      setTimeout(() => rv.classList.add("open"), 650);
+      setTimeout(done, 2300);
+    }, 450);
   };
-  pos = 0;
-  if (steps) tick();
-  else finish();
+  requestAnimationFrame(frame);
 };
 
 function selectedTour() {
@@ -2721,7 +2785,7 @@ function monStat(label, value, sub) {
   return `<div class="card pad" style="padding:16px"><span class="label notice">${label}</span><div style="font-size:21px;font-weight:800;margin:4px 0">${value}</div><div class="notice">${sub || ""}</div></div>`;
 }
 const AUDIT_LABELS = {
-  draw: "Randomayzer tanlovi",
+  draw: "Qur’a tashladi",
   backup: "Zaxira nusxa yuklab oldi",
   login: "Kirdi", login_failed: "Kirish xato (parol)", register: "Ro‘yxatdan o‘tdi", team_register: "Jamoa arizasi",
   team_close: "Jamoa faoliyatini tugatdi", approveTeam: "Jamoani tasdiqladi", rejectTeam: "Arizani rad etdi",
