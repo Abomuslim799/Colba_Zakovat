@@ -222,6 +222,7 @@ async function report(p, rangeKey, state) {
       requests: Number(o.req || 0), errors: Number(o.err || 0), avgMs: round(o.avg_ms, 0),
       samples: Number(o.samples || 0),
     },
+    railway: await railwayCost(),
     cost: {
       prices: PRICES,
       appRam: round(app.ram, 2), appCpu: round(app.cpu, 2), appMonthly: round(app.ram + app.cpu, 2),
@@ -249,4 +250,55 @@ async function report(p, rangeKey, state) {
   };
 }
 
-module.exports = { requestTimer, recordError, start, report };
+
+// ---------- Railway'ning haqiqiy sarfi (faqat shu loyiha, davr boshidan hozirgacha, +30% bilan) ----------
+// Kerak: Variables'da RAILWAY_API_TOKEN (workspace tokeni). Loyiha id'sini Railway o'zi beradi (RAILWAY_PROJECT_ID).
+const RW_API = 'https://backboard.railway.com/graphql/v2';
+const RW_WS = process.env.RAILWAY_WORKSPACE_ID || '78692e9c-4e36-47ca-9c11-20aaa6fd035d';
+const RW_PRICE = { MEMORY_USAGE_GB: 0.000231, CPU_USAGE: 0.000463, NETWORK_TX_GB: 0.05, DISK_USAGE_GB: 0.000003 };
+const USTAMA = (Number(process.env.TOLOV_FOIZ ?? 12) + Number(process.env.XIZMAT_FOIZ ?? 18)) / 100;
+let rwCache = { at: 0, data: null };
+
+async function rwQuery(token, query, variables = {}) {
+  const r = await fetch(RW_API, {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(30_000),
+  });
+  const j = await r.json();
+  if (j.errors) throw new Error(j.errors[0]?.message || 'Railway API xatosi');
+  return j.data;
+}
+
+function billingStart() {               // API bermasa: har oyning RAILWAY_BILLING_KUN (10) sanasi, 11:00 UTC
+  const k = Number(process.env.RAILWAY_BILLING_KUN || 10), n = new Date();
+  let b = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), k, 11));
+  if (b > n) b = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() - 1, k, 11));
+  return b.toISOString();
+}
+
+async function railwayCost() {
+  const token = process.env.RAILWAY_API_TOKEN;
+  if (!token) return null;
+  if (Date.now() - rwCache.at < 600_000) return rwCache.data;   // 10 daqiqada bir marta
+  let data;
+  try {
+    let start = null;
+    try {
+      const w = await rwQuery(token, 'query($w:String!){workspace(workspaceId:$w){customer{billingPeriod{start}}}}', { w: RW_WS });
+      start = w.workspace?.customer?.billingPeriod?.start || null;
+    } catch { /* zaxira hisob */ }
+    start = start || billingStart();
+    const u = await rwQuery(token, 'query($w:String!,$s:DateTime!){usage(workspaceId:$w,measurements:[MEMORY_USAGE_GB,CPU_USAGE,NETWORK_TX_GB,DISK_USAGE_GB],'
+      + 'groupBy:[PROJECT_ID],startDate:$s){measurement value tags{projectId}}}', { w: RW_WS, s: start });
+    const pid = process.env.RAILWAY_PROJECT_ID;
+    const sum = u.usage.filter((x) => !pid || x.tags.projectId === pid)
+      .reduce((t, x) => t + (x.value || 0) * (RW_PRICE[x.measurement] || 0), 0);
+    data = { total: round(sum * (1 + USTAMA), 2), since: start, at: Date.now() };
+  } catch (e) {
+    data = { error: String(e.message || e).slice(0, 200) };
+  }
+  rwCache = { at: Date.now(), data };
+  return data;
+}
+
+module.exports = { requestTimer, recordError, start, report, railwayCost };

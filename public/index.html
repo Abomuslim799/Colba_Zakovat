@@ -2590,6 +2590,7 @@ function monitoringAdmin() {
   const m = mon,
     sv = m.server,
     lim = sv.limits,
+    rw = m.railway,
     memNow = sv.now.containerMb ?? sv.now.rssMb,
     a = m.activity,
     errRate = m.overall.requests ? ((100 * m.overall.errors) / m.overall.requests).toFixed(2) : "0";
@@ -2603,19 +2604,11 @@ ${monStat("Xotira (hozir)", `${num(memNow, " MB")}`, `Ajratilgan: ${num(lim.memM
 ${monStat("Protsessor (o‘rtacha)", `${num(m.overall.cpuPct, "%")}`, `Eng yuqori: ${num(m.overall.cpuMaxPct, "%")} · ajratilgan: ${num(lim.cpu)} vCPU (${h(lim.cpuSource)})`)}
 ${monStat("So‘rovlar", `${m.overall.requests}`, `Xato (5xx): ${m.overall.errors} (${errRate}%) · o‘rtacha ${num(m.overall.avgMs, " ms")} · p95 ${num(sv.requests.p95Ms, " ms")}`)}
 ${monStat("Ma’lumotlar bazasi", fmtBytes(m.db.bytes), `Javob: ${m.db.pingMs} ms · ulanishlar: ${m.db.pool.total} (bo‘sh ${m.db.pool.idle}, navbatda ${m.db.pool.waiting})`)}
-${monStat("Taxminiy xarajat (sayt servisi)", `${money(m.cost.appMonthly)} / oy`, `Xotira ${money(m.cost.appRam)} + protsessor ${money(m.cost.appCpu)}`)}</div>
+${monStat("Server xarajati", rw && rw.total != null ? money(rw.total) : "—", rw == null ? "RAILWAY_API_TOKEN qo‘yilmagan" : rw.error ? h(rw.error) : `${fmtDate(rw.since)} dan hozirgacha · server, xizmat ko‘rsatish va to‘lov komissiyasi bilan`)}</div>
 <div class="grid2" style="margin-top:16px"><div class="card pad"><strong>Xotira (MB)</strong>${lineChart(m.series, [{ key: "container", label: "Konteyner", color: "#178451" }, { key: "rss", label: "Node jarayoni", color: "#2457a6" }], { unit: "", limit: lim.memSource === "konteyner limiti" ? lim.memMb : null })}</div>
 <div class="card pad"><strong>Protsessor (% bitta vCPU)</strong>${lineChart(m.series, [{ key: "cpu", label: "O‘rtacha", color: "#178451" }, { key: "cpuMax", label: "Eng yuqori", color: "#e0a030" }], { unit: "%" })}</div>
 <div class="card pad"><strong>So‘rovlar soni</strong>${lineChart(m.series, [{ key: "req", label: "So‘rovlar", color: "#178451" }, { key: "err", label: "Xatolar (5xx)", color: "#db5861" }], {})}</div>
 <div class="card pad"><strong>O‘rtacha javob vaqti (ms)</strong>${lineChart(m.series, [{ key: "avgMs", label: "ms", color: "#2457a6" }], { unit: "" })}</div></div>
-
-<div class="sectionTitle"><h2>Server xarajatlari (taxmin)</h2></div>
-<div class="tablewrap"><table class="datatable"><thead><tr><th>Band</th><th>Sarf (davr o‘rtachasi)</th><th>Narx</th><th>Oyiga</th></tr></thead><tbody>
-<tr><td>Xotira (sayt servisi)</td><td>${num(m.overall.memMb, " MB")}</td><td>$${m.cost.prices.ramGbMonth} / GB / oy</td><td>${money(m.cost.appRam)}</td></tr>
-<tr><td>Protsessor (sayt servisi)</td><td>${num(m.overall.cpuPct, "%")} vCPU</td><td>$${m.cost.prices.cpuVcpuMonth} / vCPU / oy</td><td>${money(m.cost.appCpu)}</td></tr>
-<tr><td>Baza hajmi (disk)</td><td>${m.cost.dbStorageGb} GB</td><td>$${m.cost.prices.volumeGbMonth} / GB / oy</td><td>${money(m.cost.dbStorage)}</td></tr>
-<tr><td><strong>Jami (Postgres servisining xotira/protsessorisiz)</strong></td><td></td><td></td><td><strong>${money(m.cost.appMonthly + m.cost.dbStorage)}</strong></td></tr></tbody></table></div>
-<p class="notice">${h(m.cost.note)} Hobby tarifi oyiga $${m.cost.prices.hobbyIncluded} lik sarfni o‘z ichiga oladi. Narxlar: Railway, ${h(m.cost.prices.checked)}.</p>
 
 <div class="sectionTitle"><h2>Faollik (${h(ranges.find((r) => r[0] === m.range)?.[1] || "")})</h2></div>
 <div class="grid3">${monStat("Foydalanuvchilar", (a.users.user || 0) + (a.users.admin || 0) + (a.users.owner || 0), `Admin: ${a.users.admin || 0} · yangi: ${a.newUsers}`)}
