@@ -171,6 +171,7 @@ body.is-auth #app.shell{max-width:none;padding:0}
 
 
 
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -385,52 +386,98 @@ main.shell{overflow-x:clip}
 .chg-cols>div{min-width:0}
 .chg-box .chg-name strong,.chg-admin .chg-name strong{display:inline;margin:0}
 
-/* Qur'a — minimal */
+/* Qur'a — 3 ko'rinish (A neon, B aurora, C yorug') */
 .rz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:8px}
 .rz-name{font:600 14px/1.25 inherit;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(14,59,44,.14);background:rgba(255,255,255,.6);color:#6b7d74;cursor:pointer;transition:background .2s,color .2s,border-color .2s;min-width:0;overflow-wrap:anywhere;display:flex;justify-content:space-between;gap:6px;align-items:center}
 .rz-name small{font-size:11px;opacity:.7;font-weight:500}
 .rz-name.on{background:#145a3e;border-color:#145a3e;color:#fff}
 .rz-name:disabled{cursor:default;opacity:.8}
-.rz-stage{margin-top:14px;background:#0d1714;border-radius:20px;padding:18px;color:#eef3ef;display:flex;flex-direction:column;gap:14px;overflow:hidden}
-.rz-stage:fullscreen{border-radius:0;padding:3vh 4vw;justify-content:center}
-.rz-actions{gap:8px;flex-wrap:wrap}
-.rz-actions .field{flex:1 1 260px;min-width:0;background:#fff}
-.rz-go{flex:0 0 auto;min-width:150px}
-.qr-scene{--d:min(78vw,480px);position:relative;height:calc(var(--d) * 1.12);perspective:1400px;perspective-origin:50% 28%;display:grid;place-items:center}
-.rz-stage:fullscreen .qr-scene{--d:min(70vh,78vw);height:calc(var(--d) * 1.1)}
+.rz-stage{--fg:#eaf4ef;--mut:rgba(234,244,239,.62);--line:rgba(255,255,255,.09);position:relative;margin-top:14px;border-radius:22px;padding:22px;color:var(--fg);overflow:hidden;isolation:isolate}
+.rz-stage:fullscreen{border-radius:0;padding:3vh 3vw;display:grid;align-items:center}
+.rz-stage::before{content:"";position:absolute;inset:-20%;z-index:-1;pointer-events:none}
+.qr-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:center}
+.qr-empty{display:grid;place-items:center;min-height:300px;color:var(--mut)}
+.qr-scene{--d:min(60vw,500px);position:relative;height:calc(var(--d) * 1.08);perspective:1400px;perspective-origin:50% 25%;display:grid;place-items:center}
+.rz-stage:fullscreen .qr-scene{--d:min(78vh,calc(100vw - 420px))}
 .qr-cam{position:relative;width:var(--d);height:var(--d);transform-style:preserve-3d;transform:rotateX(var(--tilt,0deg)) scale(var(--zoom,1));will-change:transform}
 .qr-table{position:absolute;inset:0;border-radius:50%;transform:rotate(var(--rot,0deg));will-change:transform}
-.qr-felt{position:absolute;inset:0;border-radius:50%;background:#15241f;box-shadow:inset 0 0 0 1px rgba(238,243,239,.10),0 24px 60px rgba(0,0,0,.45)}
-.qr-felt::after{content:"";position:absolute;inset:16%;border-radius:50%;border:1px solid rgba(238,243,239,.06)}
-.qr-ticks{display:none}
-.qr-hub{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:rgba(238,243,239,.35)}
-.qr-slot{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -.36))}
-.qr-env{--w:clamp(44px,calc(var(--d) * 1.8 / var(--n)),118px);position:absolute;left:calc(var(--w) * -.5);top:calc(var(--w) * -.32);width:var(--w);height:calc(var(--w) * .64);border-radius:3px;background:#f3f1ea;display:grid;place-items:center;overflow:hidden;color:#2a3530;transition:opacity .6s ease,background .4s ease,transform .6s cubic-bezier(.22,1,.36,1)}
-.qr-env span{position:relative;z-index:1;padding:calc(var(--w) * .16) 4px 2px;font:600 clamp(8px,calc(var(--w) * .12),14px)/1.15 inherit;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-.qr-flap{position:absolute;inset:0 0 auto 0;height:52%;z-index:2;transform-origin:50% 0;background:linear-gradient(to bottom right,transparent calc(50% - .6px),rgba(42,53,48,.22) 50%,transparent calc(50% + .6px)) left/50% 100% no-repeat,linear-gradient(to bottom left,transparent calc(50% - .6px),rgba(42,53,48,.22) 50%,transparent calc(50% + .6px)) right/50% 100% no-repeat}
-.qr-slot.dim .qr-env{opacity:.22}
-.qr-slot.won .qr-env{background:#fff;transform:translateY(-4px)}
-.qr-slot.lifted .qr-env{opacity:0;transition-duration:.25s}
-.qr-pointer{position:absolute;left:50%;top:calc(var(--d) * -.035);width:2px;height:calc(var(--d) * .05);transform:translate(-50%,-100%);background:#e2b44b;border-radius:2px;z-index:3}
-.qr-pointer::after{content:"";position:absolute;left:50%;bottom:-3px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#e2b44b}
-.qr-reveal{position:absolute;inset:0;display:none;place-items:center;pointer-events:none;z-index:5}
-.qr-reveal.show{display:grid}
-.qr-big{position:relative;width:min(80%,360px);display:grid;justify-items:center;animation:qrRise .9s cubic-bezier(.22,1,.36,1) both}
-.qr-env.big{--w:min(100%,360px);position:relative;left:auto;top:auto;width:100%;height:auto;aspect-ratio:1.6;z-index:2;border-radius:6px;background:#f3f1ea;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:visible}
-.qr-env.big span{font-size:clamp(13px,3vw,18px);padding-top:40%;color:#5d6b64;font-weight:500}
-.qr-env.big .qr-flap{background:linear-gradient(to bottom right,transparent calc(50% - .8px),rgba(42,53,48,.25) 50%,transparent calc(50% + .8px)) left/50% 100% no-repeat,linear-gradient(to bottom left,transparent calc(50% - .8px),rgba(42,53,48,.25) 50%,transparent calc(50% + .8px)) right/50% 100% no-repeat;transition:transform .8s cubic-bezier(.65,0,.35,1),opacity .4s .5s}
-.qr-reveal.open .qr-env.big .qr-flap{transform:rotateX(180deg);opacity:0}
-.qr-card{position:absolute;left:8%;right:8%;bottom:14%;z-index:1;background:#fff;border-radius:10px;padding:18px 14px 20px;text-align:center;color:#1d2a24;box-shadow:0 12px 34px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:6px;transform:translateY(0);opacity:0;transition:transform 1.1s cubic-bezier(.22,1,.36,1) .35s,opacity .5s ease .35s,z-index 0s 1.3s}
-.qr-reveal.open .qr-card{transform:translateY(-82%);opacity:1;z-index:3}
-.qr-card .qr-label{font-size:12px;color:#8a978f;letter-spacing:.01em}
-.qr-card strong{font:700 clamp(22px,4.4vw,38px)/1.1 var(--display,inherit);color:#123f2d;overflow-wrap:anywhere}
-.qr-card .qr-team{font-size:13px;color:#8a978f}
-.rz-stage:fullscreen .qr-big{width:min(58vh,540px)}
-.rz-stage:fullscreen .qr-card strong{font-size:clamp(34px,6vh,68px)}
-.qr-reveal.still .qr-big,.qr-reveal.still .qr-card,.qr-reveal.still .qr-flap{animation:none!important;transition:none!important}
-@keyframes qrRise{from{transform:translateY(calc(var(--d) * -.36)) scale(.32);opacity:0}35%{opacity:1}to{transform:none;opacity:1}}
-@media (max-width:640px){.rz-stage{padding:12px}.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:9px 10px}.qr-scene{--d:min(84vw,420px)}}
-@media (prefers-reduced-motion:reduce){.qr-big,.qr-card,.qr-flap,.qr-env{animation:none!important;transition:none!important}}
+.qr-base,.qr-gaps,.qr-lit{position:absolute;inset:0;border-radius:50%}
+.qr-gaps{background:repeating-conic-gradient(from calc(var(--seg) / -2),transparent 0 calc(var(--seg) - .7deg),var(--gap,rgba(255,255,255,.12)) calc(var(--seg) - .7deg) var(--seg));-webkit-mask:radial-gradient(circle closest-side,transparent 58%,#000 59%);mask:radial-gradient(circle closest-side,transparent 58%,#000 59%)}
+.qr-lit{opacity:0;transition:opacity .7s ease;background:conic-gradient(from var(--from,0deg),var(--lit) 0 var(--seg),transparent var(--seg));-webkit-mask:radial-gradient(circle closest-side,transparent 58%,#000 59%);mask:radial-gradient(circle closest-side,transparent 58%,#000 59%);filter:drop-shadow(0 0 26px var(--litglow))}
+.qr-lit.on{opacity:1}
+.qr-slot{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -.385))}
+.qr-env{--w:clamp(44px,calc(var(--d) * 1.75 / var(--n)),108px);position:absolute;left:calc(var(--w) * -.5);top:calc(var(--w) * -.32);width:var(--w);height:calc(var(--w) * .64);border-radius:calc(var(--w) * .09);display:grid;place-items:center;overflow:hidden;transition:opacity .6s ease,background .5s,box-shadow .5s,transform .6s cubic-bezier(.22,1,.36,1)}
+.qr-env::before{content:"";position:absolute;inset:0 0 auto 0;height:52%;clip-path:polygon(0 0,100% 0,50% 100%);background:var(--flap)}
+.qr-env span{position:relative;padding:calc(var(--w) * .17) 4px 2px;font:700 clamp(8px,calc(var(--w) * .12),13px)/1.15 inherit;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.qr-slot.dim .qr-env{opacity:.35}
+.qr-slot.won .qr-env{transform:translateY(-6px) scale(1.06)}
+.qr-hub{position:absolute;left:50%;top:50%;width:calc(var(--d) * .32);height:calc(var(--d) * .32);margin:calc(var(--d) * -.16);border-radius:50%;display:grid;place-items:center;align-content:center;gap:3px;text-align:center;transform:translateZ(1px)}
+.qr-hub img{width:28%;height:auto;margin-bottom:3px}
+.qr-hub b{font:800 clamp(12px,calc(var(--d) * .036),20px)/1 var(--display,inherit);letter-spacing:.06em}
+.qr-hub span{font-size:clamp(7px,calc(var(--d) * .019),11px);letter-spacing:.14em;color:var(--mut)}
+.qr-reveal{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:5}
+.qr-card{min-width:min(78%,340px);max-width:84%;border-radius:22px;padding:22px 22px 24px;text-align:center;opacity:0;transform:scale(.88);filter:blur(10px);transition:opacity .7s ease,transform .9s cubic-bezier(.22,1,.36,1),filter .7s ease}
+.qr-reveal.show .qr-card{opacity:1;transform:none;filter:none}
+.qr-card small{display:block;font-size:12px;color:var(--mut);margin-bottom:6px}
+.qr-card strong{display:block;font:800 clamp(24px,4.2vw,40px)/1.1 var(--display,inherit);overflow-wrap:anywhere}
+.qr-card em{display:block;font-style:normal;font-size:13px;margin-top:8px;color:var(--mut)}
+.rz-stage:fullscreen .qr-card strong{font-size:clamp(36px,6vh,72px)}
+.qr-panel{border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:0}
+.qr-panel h3{margin:0;font:700 16px var(--display,inherit)}.qr-panel>p{margin:2px 0 10px;font-size:12px;color:var(--mut)}
+.qr-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;font-size:13px;border-top:1px solid var(--line)}
+.qr-themename{font-size:11.5px;color:var(--mut);text-align:right;margin:-6px 0 4px}
+.qr-sw{appearance:none;-webkit-appearance:none;flex:none;width:38px;height:22px;border-radius:11px;background:var(--off);position:relative;cursor:pointer;transition:background .25s;margin:0}
+.qr-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.qr-sw:checked{background:var(--acc)}.qr-sw:checked::after{transform:translateX(16px)}
+.qr-seg{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--segbg)}
+.qr-seg button{border:0;background:transparent;color:inherit;font:600 12px inherit;padding:5px 10px;border-radius:7px;cursor:pointer;transition:background .2s}
+.qr-seg button.on{background:var(--segon)}
+.qr-title{margin-top:12px;font-size:14px!important}
+.qr-go{margin-top:10px;border:0;border-radius:14px;padding:13px;font:700 14px var(--display,inherit);cursor:pointer;background:var(--go);color:var(--gofg);transition:opacity .2s,transform .15s}
+.qr-go:disabled{opacity:.45;cursor:default}.qr-go:not(:disabled):active{transform:scale(.98)}
+.qr-meta{font-size:12px;color:var(--mut);margin-top:10px}
+.qr-link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
+.qr-fs{margin-top:10px;align-self:flex-start;font-size:12px;color:var(--mut)}
+.qr-results{margin:10px 0 0;padding-left:20px;font-size:13px}.qr-results li{margin:3px 0}.qr-results span{color:var(--mut);font-size:12px}
+.qr-panel button:disabled,.qr-sw:disabled{cursor:default;opacity:.6}
+/* A — Neon halqa */
+.qt-A{background:radial-gradient(900px 600px at 35% 45%,#0f2a22 0%,#060b0a 62%),#050807;--lit:rgba(243,197,90,.42);--litglow:rgba(243,197,90,.65);--flap:rgba(255,255,255,.22);--acc:#33e08f;--off:rgba(255,255,255,.18);--segbg:rgba(255,255,255,.06);--segon:rgba(51,224,143,.25);--go:linear-gradient(90deg,#33e08f,#f3c55a);--gofg:#06120d}
+.qt-A .qr-base{background:radial-gradient(circle,rgba(255,255,255,.07),rgba(255,255,255,.02) 70%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 0 0 1px rgba(51,224,143,.3),0 0 60px rgba(51,224,143,.18),0 40px 80px rgba(0,0,0,.5)}
+.qt-A .qr-base::after{content:"";position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(from 200deg,rgba(51,224,143,0),#33e08f 25%,#f3c55a 45%,rgba(243,197,90,0) 60%);-webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(circle closest-side,transparent calc(100% - 3px),#000 calc(100% - 2px))}
+.qt-A .qr-gaps{--gap:rgba(255,255,255,.06)}
+.qt-A .qr-env{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);color:#eaf4ef}
+.qt-A .qr-slot.won .qr-env{background:rgba(243,197,90,.25);border-color:#f3c55a;box-shadow:0 0 22px rgba(243,197,90,.6)}
+.qt-A .qr-hub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);box-shadow:0 0 40px rgba(51,224,143,.15)}
+.qt-A .qr-card{background:rgba(12,30,24,.6);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 0 0 1px rgba(243,197,90,.3),0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(243,197,90,.2)}
+.qt-A .qr-card strong{color:#f6d27a}
+.qt-A .qr-panel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+/* B — Aurora */
+.qt-B{background:#07090f;--fg:#eef0f6;--mut:rgba(238,240,246,.62);--lit:rgba(255,255,255,.32);--litglow:rgba(190,170,255,.85);--flap:rgba(255,255,255,.32);--acc:linear-gradient(90deg,#2dd4a0,#7c5cff);--off:rgba(255,255,255,.2);--segbg:rgba(255,255,255,.08);--segon:rgba(255,255,255,.22);--go:rgba(255,255,255,.92);--gofg:#141233}
+.qt-B::before{background:radial-gradient(40% 32% at 22% 30%,rgba(45,212,160,.45),transparent 70%),radial-gradient(36% 32% at 60% 78%,rgba(124,92,255,.40),transparent 70%),radial-gradient(34% 28% at 82% 18%,rgba(255,176,72,.30),transparent 70%);filter:blur(30px);animation:qrAurora 16s ease-in-out infinite alternate}
+@keyframes qrAurora{to{transform:translate(3%,-2%) rotate(6deg)}}
+.qt-B .qr-sw:checked{background:#5b8ff0}
+.qt-B .qr-base{background:rgba(255,255,255,.06);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 1px 0 rgba(255,255,255,.35),0 40px 90px rgba(0,0,0,.5)}
+.qt-B .qr-gaps{--gap:rgba(255,255,255,.14)}
+.qt-B .qr-env{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#eef0f6}
+.qt-B .qr-slot.won .qr-env{background:rgba(255,255,255,.9);color:#1b1640;box-shadow:0 0 30px rgba(190,170,255,.9)}
+.qt-B .qr-hub{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.qt-B .qr-card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 30px 80px rgba(0,0,0,.5)}
+.qt-B .qr-card strong{background:linear-gradient(90deg,#7ff0c8,#c3b4ff,#ffd08a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.qt-B .qr-panel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+/* C — Yorug' shisha */
+.qt-C{background:radial-gradient(60% 70% at 25% 30%,#e3f4ea,transparent 70%),radial-gradient(55% 70% at 85% 85%,#f6ead2,transparent 70%),#eef2ee;--fg:#13241d;--mut:rgba(19,36,29,.58);--line:rgba(19,36,29,.08);--lit:rgba(242,190,80,.48);--litglow:rgba(242,190,80,.75);--flap:#e3ece6;--acc:#1e9a52;--off:#cfd8d3;--segbg:rgba(19,36,29,.06);--segon:#fff;--go:#145a3e;--gofg:#fff}
+.qt-C .qr-base{background:rgba(255,255,255,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 30px 70px rgba(30,70,50,.18),0 0 0 10px rgba(255,255,255,.35)}
+.qt-C .qr-gaps{--gap:rgba(19,36,29,.08)}
+.qt-C .qr-env{background:#fff;box-shadow:0 4px 14px rgba(30,70,50,.12);color:#1d3a2c}
+.qt-C .qr-slot.won .qr-env{box-shadow:0 0 0 2px #e7b44a,0 8px 26px rgba(231,180,74,.55)}
+.qt-C .qr-hub{background:rgba(255,255,255,.8);box-shadow:0 10px 30px rgba(30,70,50,.12),inset 0 0 0 1px #fff}
+.qt-C .qr-card{background:rgba(255,255,255,.72);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:inset 0 0 0 1px #fff,0 30px 70px rgba(30,70,50,.22)}
+.qt-C .qr-card strong{color:#145a3e}
+.qt-C .qr-panel{background:rgba(255,255,255,.62);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 0 0 1px #fff,0 20px 50px rgba(30,70,50,.1)}
+.qt-C .qr-seg button.on{box-shadow:0 1px 3px rgba(0,0,0,.1)}
+@media (max-width:860px){.qr-wrap{grid-template-columns:1fr}.qr-scene{--d:min(86vw,460px)}.rz-stage{padding:14px}.rz-stage:fullscreen .qr-scene{--d:min(86vw,58vh)}}
+@media (max-width:640px){.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:9px 10px}}
+@media (prefers-reduced-motion:reduce){.qr-card,.qr-env,.qr-lit,.qt-B::before{animation:none!important;transition:none!important}}
 
 </style></head><body><header class="top"><div class="shell topin"><a class="brand" href="#" onclick="go('home');return false"><img class="logo" src="/logo.png" alt="COLBA"><div><div class="brandname">COLBA <span class="highlight">ZAKOVAT</span></div><span class="subbrand">LIGA PLATFORMASI</span></div></a><nav class="nav" id="nav"></nav><div class="tools" id="tools"></div></div></header><main class="shell" id="app"></main><footer class="shell foot">COLBA Zakovat Ligasi · Intellektual musobaqalar boshqaruv tizimi<br>G‘oya muallifi va platforma yaratuvchisi: <strong>Adhamjon Zokirjanov</strong></footer><div id="modalRoot"></div>
 <script>
@@ -2057,12 +2104,29 @@ window.adminTab = async (k) => {
 };
 
 // ---------- Qur'a: belgilangan jamoalar a'zolaridan bitta ishtirokchini tasodifiy tanlash ----------
-// Tanlov serverda bajariladi (crypto.randomInt) va tarixga yoziladi; stol animatsiyasi faqat natijani ko'rsatadi.
+// Tanlov serverda (crypto.randomInt) bajariladi va tarixga yoziladi; stol animatsiyasi faqat natijani ko'rsatadi.
+// Sahna (#rzStage) to'liq ekranda ham ishlashi uchun animatsiya va sozlamalar faqat uning ichini yangilaydi.
 let drawSel = null,
   drawBusy = false,
   drawLast = null,
-  drawSkip = new Set(), // "teamId|ism" — oldin tanlanib, chiqarib qo'yilgan ishtirokchilar
-  drawRot = 0; // stolning joriy burilishi (gradus)
+  drawSkip = new Set(), // "teamId|ism" — chiqarib qo'yilgan ishtirokchilar
+  drawRot = 0,
+  drawRun_ = [], // shu seriyadagi natijalar
+  drawPending = false; // to'liq ekrandan chiqqanda sahifani yangilash kerak
+const QURA_DEF = { theme: "A", sound: true, exclude: true, dur: 7, tries: 1 };
+const QURA_THEMES = { A: "Neon halqa", B: "Aurora", C: "Yorug‘ shisha" };
+let quraCfg = (() => {
+  try {
+    return { ...QURA_DEF, ...JSON.parse(localStorage.getItem("quraCfg") || "{}") };
+  } catch {
+    return { ...QURA_DEF };
+  }
+})();
+const quraSave = () => {
+  try {
+    localStorage.setItem("quraCfg", JSON.stringify(quraCfg));
+  } catch {}
+};
 const drawTeams = () => data.teams.filter((tm) => tm.approved && tm.status === "approved").sort((a, b) => a.name.localeCompare(b.name, "uz"));
 function drawSelSet() {
   const ok = new Set(drawTeams().map((t) => t.id));
@@ -2072,41 +2136,101 @@ function drawSelSet() {
 }
 const drawSelTeams = () => drawTeams().filter((t) => drawSelSet().has(t.id));
 const drawPeople = () => drawSelTeams().reduce((n, t) => n + members(t).filter((m) => !drawSkip.has(t.id + "|" + m)).length, 0);
-function quraTable(teams) {
-  const n = Math.max(teams.length, 1);
-  const envs = teams
-    .map((t, i) => `<div class="qr-slot" style="--a:${(360 / n) * i}deg" data-id="${t.id}"><div class="qr-env"><i class="qr-flap"></i><span>${h(t.name)}</span></div></div>`)
-    .join("");
-  const ticks = Array.from({ length: n }, (_, i) => `<i style="--a:${(360 / n) * (i + 0.5)}deg"></i>`).join("");
-  return `<div class="qr-scene" id="qrScene" style="--n:${n}"><div class="qr-cam" id="qrCam" style="--tilt:${drawLast ? 0 : 58}deg;--zoom:${drawLast ? 1 : 0.86}"><div class="qr-pointer" aria-hidden="true"></div><div class="qr-table" id="qrTable" style="--rot:${drawRot}deg"><div class="qr-felt"></div><div class="qr-ticks">${ticks}</div>${envs}<div class="qr-hub"></div></div></div><div class="qr-reveal" id="qrReveal" aria-live="assertive"></div></div>`;
+
+// --- ovoz (WebAudio, fayl kerak emas; yengil)
+let qAudio = null;
+function qTone(f, dur, vol, type = "sine", when = 0) {
+  if (!quraCfg.sound) return;
+  try {
+    qAudio ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (qAudio.state === "suspended") qAudio.resume();
+    const t = qAudio.currentTime + when,
+      o = qAudio.createOscillator(),
+      g = qAudio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(qAudio.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  } catch {}
 }
+const qTick = () => qTone(1850, 0.035, 0.035, "triangle");
+const qStop = () => [523.3, 784, 1046.5].forEach((f, i) => qTone(f, 1.4, 0.05 - i * 0.012, "sine", i * 0.06));
+const qReveal = () => [1046.5, 1318.5, 1568, 2093].forEach((f, i) => qTone(f, 0.9, 0.025, "sine", 0.05 + i * 0.07));
+
+function quraTable(teams) {
+  const n = Math.max(teams.length, 1),
+    seg = 360 / n,
+    wi = drawLast ? teams.findIndex((t) => t.id === drawLast.picked.id) : -1;
+  const envs = teams
+    .map((t, i) => `<div class="qr-slot${i === wi ? " won" : wi >= 0 ? " dim" : ""}" style="--a:${seg * i}deg" data-id="${t.id}"><div class="qr-env"><span>${h(t.name)}</span></div></div>`)
+    .join("");
+  const lit = wi >= 0 ? ` on" style="--from:${seg * wi - seg / 2}deg` : "";
+  return `<div class="qr-scene" id="qrScene" style="--n:${n};--seg:${seg}deg"><div class="qr-cam" id="qrCam" style="--tilt:${drawLast ? 0 : 50}deg;--zoom:${drawLast ? 1 : 0.88}"><div class="qr-table" id="qrTable" style="--rot:${drawRot}deg"><div class="qr-base"></div><div class="qr-gaps"></div><div class="qr-lit${lit}" id="qrLit"></div>${envs}</div><div class="qr-hub"><img src="/emblem-${quraCfg.theme === "C" ? "d" : "w"}.png" alt=""><b>COLBA</b><span>ZAKOVAT LIGASI</span></div></div><div class="qr-reveal${drawLast ? " show" : ""}" id="qrReveal" aria-live="assertive">${drawLast ? quraCard(drawLast) : ""}</div></div>`;
+}
+const quraCard = (d) => `<div class="qr-card"><small>${h(d.title || "Qur’a natijasi")}</small><strong>${h(d.picked.member)}</strong><em>${h(d.picked.name)} jamoasi</em></div>`;
+function quraSettings() {
+  const sw = (k, label) => `<label class="qr-opt"><span>${label}</span><input type="checkbox" class="qr-sw" ${quraCfg[k] ? "checked" : ""} ${drawBusy ? "disabled" : ""} onchange="quraSet('${k}',this.checked)"></label>`;
+  const seg = (k, label, vals, fmt = (v) => v) => `<div class="qr-opt"><span>${label}</span><span class="qr-seg">${vals.map((v) => `<button class="${quraCfg[k] === v ? "on" : ""}" ${drawBusy ? "disabled" : ""} onclick="quraSet('${k}',${JSON.stringify(v).replace(/"/g, "&quot;")})">${fmt(v)}</button>`).join("")}</span></div>`;
+  const people = drawPeople();
+  return `<div class="qr-panel"><h3>Qur’a sozlamalari</h3><p>Qur’a tashlashdan oldin sozlang</p>${seg("theme", "Ko‘rinish", ["A", "B", "C"], (v) => v)}<div class="qr-themename">${QURA_THEMES[quraCfg.theme]}</div>${sw("exclude", "Tanlangan ishtirokchini keyingi urinishda chiqarish")}${sw("sound", "Ovoz")}${seg("dur", "Davomiyligi", [4, 7, 10], (v) => v + " s")}${seg("tries", "Urinishlar", [1, 2, 3])}<input class="field qr-title" id="rzTitle" maxlength="120" placeholder="Maqsad (ixtiyoriy), masalan: savolga javob beradi" ${drawBusy ? "disabled" : ""}><button class="qr-go" id="rzGo" onclick="drawRun()" ${drawBusy || people < 2 ? "disabled" : ""}>${drawBusy ? "Qur’a tashlanmoqda…" : "Qur’a tashlash"}</button><div class="qr-meta">${drawSelSet().size} jamoa · ${people} ishtirokchi${drawSkip.size ? ` · chiqarilgan ${drawSkip.size} <button class="qr-link" onclick="drawResetSkip()" ${drawBusy ? "disabled" : ""}>qaytarish</button>` : ""}</div>${
+    drawRun_.length ? `<ol class="qr-results">${drawRun_.map((d) => `<li><b>${h(d.picked.member)}</b> <span>${h(d.picked.name)}</span></li>`).join("")}</ol>` : ""
+  }<button class="qr-link qr-fs" onclick="drawFullscreen()">⛶ To‘liq ekran</button></div>`;
+}
+const quraStageInner = () => {
+  const chosen = drawSelTeams();
+  return `<div class="qr-wrap">${chosen.length ? quraTable(chosen) : '<div class="qr-empty">Qur’a uchun jamoalarni belgilang</div>'}${quraSettings()}</div>`;
+};
+// sahnani joyida yangilash (to'liq ekranni buzmaydi)
+function quraPaint() {
+  const st = $("rzStage");
+  if (!st) return;
+  const title = $("rzTitle")?.value || "";
+  st.className = "rz-stage qt-" + quraCfg.theme;
+  st.innerHTML = quraStageInner();
+  if ($("rzTitle")) $("rzTitle").value = title;
+}
+// sahifani yangilash: to'liq ekranda bo'lsa keyinga qoldiriladi
+const quraRefresh = () => (document.fullscreenElement ? ((drawPending = true), quraPaint()) : draw());
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && drawPending) {
+    drawPending = false;
+    draw();
+  }
+});
+
 function randomAdmin() {
   const teams = drawTeams(),
     sel = drawSelSet(),
-    t = selectedTour(),
-    chosen = drawSelTeams();
+    t = selectedTour();
   const hist = (data.draws || []).slice(0, 12);
   const chip = (tm) => `<button class="rz-name${sel.has(tm.id) ? " on" : ""}" onclick="drawToggle('${tm.id}')" ${drawBusy ? "disabled" : ""} aria-pressed="${sel.has(tm.id)}">${h(tm.name)} <small>${members(tm).length}</small></button>`;
-  const people = drawPeople();
-  return `<div class="card pad"><div class="row between" style="flex-wrap:wrap;gap:10px"><div><h2 style="margin:0">Qur’a</h2><p class="notice" style="margin:4px 0 0">Jamoalarni belgilang — qur’a ularning barcha a’zolari orasidan bitta ishtirokchini tanlaydi (har bir ishtirokchining imkoniyati teng). Tanlov serverda bajariladi va tarixga yoziladi.</p></div><button class="pill" onclick="drawFullscreen()" title="Proyektor uchun">⛶ To‘liq ekran</button></div>
-<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 10px"><button class="smallbtn soft" onclick="drawPick('all')">Hammasi</button><button class="smallbtn pill" onclick="drawPick('none')">Tozalash</button>${t && t.activeTeams?.length ? `<button class="smallbtn pill" onclick="drawPick('tour')">${h(t.title)} jamoalari (${t.activeTeams.length})</button>` : ""}<span class="notice" style="align-self:center">Jamoa: <strong>${sel.size}</strong> · ishtirokchi: <strong>${people}</strong>${drawSkip.size ? ` · chiqarilgan: ${drawSkip.size} <button class="linkbtn" onclick="drawResetSkip()">qaytarish</button>` : ""}</span></div>
+  return `<div class="card pad"><h2 style="margin:0">Qur’a</h2><p class="notice" style="margin:4px 0 0">Jamoalarni belgilang — qur’a ularning barcha a’zolari orasidan bitta ishtirokchini tanlaydi (har bir ishtirokchining imkoniyati teng). Tanlov serverda bajariladi va tarixga yoziladi.</p>
+<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 10px"><button class="smallbtn soft" onclick="drawPick('all')">Hammasi</button><button class="smallbtn pill" onclick="drawPick('none')">Tozalash</button>${t && t.activeTeams?.length ? `<button class="smallbtn pill" onclick="drawPick('tour')">${h(t.title)} jamoalari (${t.activeTeams.length})</button>` : ""}</div>
 <div class="rz-grid">${teams.map(chip).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q</div>'}</div></div>
-<div class="rz-stage" id="rzStage">${chosen.length ? quraTable(chosen) : '<div class="empty" style="color:#cfe0d6">Qur’a uchun jamoalarni belgilang</div>'}
-<div class="row rz-actions"><input class="field" id="rzTitle" maxlength="120" placeholder="Nima uchun tanlanmoqda (ixtiyoriy), masalan: savolga javob beradi" ${drawBusy ? "disabled" : ""}><button class="primary rz-go" id="rzGo" onclick="drawRun()" ${drawBusy || people < 2 ? "disabled" : ""}>Qur’a tashlash</button>${drawLast && !drawBusy && people > 2 ? `<button class="pill" onclick="drawAgainWithout()">Uni chiqarib, yana tashlash</button>` : ""}</div></div>
+<div class="rz-stage qt-${quraCfg.theme}" id="rzStage">${quraStageInner()}</div>
 <div class="card pad" style="margin-top:14px"><h3 class="h3" style="margin-top:0">Qur’alar tarixi</h3>${
     hist.length
       ? `<div class="tablewrap"><table class="datatable"><thead><tr><th>Vaqt</th><th>Maqsad</th><th>Ishtirokchi</th><th>Jamoa</th><th>Nechtadan</th><th>Kim</th></tr></thead><tbody>${hist.map((d) => `<tr><td style="white-space:nowrap">${fmtDate(d.at)}</td><td>${h(d.title || "—")}</td><td><strong>${h(d.picked.member || "—")}</strong></td><td>${h(d.picked.name)}</td><td title="${h(d.pool.map((x) => x.name).join(", "))}">${d.people ? d.people + " kishi" : d.pool.length + " jamoa"}</td><td>${h(d.by)}</td></tr>`).join("")}</tbody></table></div>`
       : '<p class="notice">Hali qur’a tashlanmagan.</p>'
   }</div>`;
 }
-function drawRevealHTML(d) {
-  return `<div class="qr-big"><div class="qr-card"><span class="qr-label">${h(d.title || "Qur’a natijasi")}</span><strong>${h(d.picked.member)}</strong><span class="qr-team">${h(d.picked.name)}</span></div><div class="qr-env big"><i class="qr-flap"></i><span>${h(d.picked.name)}</span></div></div>`;
-}
+window.quraSet = (k, v) => {
+  if (drawBusy) return;
+  quraCfg[k] = v;
+  quraSave();
+  if (k === "sound" && v) qTone(1046.5, 0.5, 0.04);
+  quraPaint();
+};
 window.drawToggle = (id) => {
   if (drawBusy) return;
   const sel = drawSelSet();
   sel.has(id) ? sel.delete(id) : sel.add(id);
   drawLast = null;
+  drawRun_ = [];
   draw();
 };
 window.drawPick = (k) => {
@@ -2116,20 +2240,14 @@ window.drawPick = (k) => {
   if (k === "all") drawTeams().forEach((t) => sel.add(t.id));
   if (k === "tour") (selectedTour()?.activeTeams || []).forEach((id) => drawTeams().some((t) => t.id === id) && sel.add(id));
   drawLast = null;
+  drawRun_ = [];
   drawSkip.clear();
   draw();
 };
 window.drawResetSkip = () => {
+  if (drawBusy) return;
   drawSkip.clear();
-  draw();
-};
-window.drawAgainWithout = () => {
-  drawSkip.add(drawLast.picked.id + "|" + drawLast.picked.member);
-  const title = $("rzTitle")?.value || "";
-  drawLast = null;
-  draw();
-  if ($("rzTitle")) $("rzTitle").value = title;
-  drawRun();
+  quraPaint();
 };
 window.drawFullscreen = () => {
   const el = $("rzStage");
@@ -2137,96 +2255,108 @@ window.drawFullscreen = () => {
   if (document.fullscreenElement) document.exitFullscreen?.();
   else el.requestFullscreen?.().catch(() => {});
 };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// bir urinish: serverdan natija → stol aylanadi → tanlangan qism yorishadi → natija kartochkasi
+async function quraOnce(title) {
+  const teams = drawSelTeams();
+  const x = await api("/api/action", { action: "draw", payload: { teamIds: teams.map((t) => t.id), exclude: [...drawSkip], title } });
+  const d = x.data.draws[0];
+  data = x.data;
+  normalize();
+  const cam = $("qrCam"),
+    tbl = $("qrTable");
+  const rv = $("qrReveal"),
+    lit = $("qrLit");
+  rv.className = "qr-reveal";
+  lit.className = "qr-lit";
+  document.querySelectorAll(".qr-slot").forEach((e) => e.classList.remove("won", "dim"));
+  const i = teams.findIndex((t) => t.id === d.picked.id),
+    n = teams.length,
+    seg = 360 / n;
+  if (!cam || reduceMotion()) {
+    drawRot = (360 - seg * i) % 360;
+  } else {
+    const r0 = drawRot,
+      base = (((-seg * i - r0) % 360) + 360) % 360,
+      turns = quraCfg.dur <= 4 ? 1 : 2,
+      r1 = r0 + base + 360 * turns;
+    const T_SPIN = quraCfg.dur * 1000 - 1200,
+      T_TILT = Math.min(2400, T_SPIN * 0.45);
+    const tilt0 = parseFloat(cam.style.getPropertyValue("--tilt")) || 0,
+      zoom0 = parseFloat(cam.style.getPropertyValue("--zoom")) || 1;
+    // tezlik profili: silliq tezlanish (14%), so'ng uzluksiz sekinlashish; burchak = integral
+    const LUT = (() => {
+      const N = 600, k = 0.14, out = [0];
+      let acc = 0;
+      const vel = (u) => (u < k ? Math.sin((u / k) * Math.PI / 2) ** 2 : (1 - (u - k) / (1 - k)) ** 3.2);
+      for (let j = 1; j <= N; j++) out.push((acc += vel((j - 0.5) / N)));
+      return out.map((v) => v / acc);
+    })();
+    const ease = (u) => {
+      const p = Math.min(1, Math.max(0, u)) * (LUT.length - 1), j = Math.floor(p);
+      return j >= LUT.length - 1 ? 1 : LUT[j] + (LUT[j + 1] - LUT[j]) * (p - j);
+    };
+    const eio = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+    let lastSeg = Math.floor((r0 + seg / 2) / seg);
+    await new Promise((resolve) => {
+      const T0 = performance.now();
+      const frame = (now) => {
+        if (!$("qrTable")) return resolve();
+        const t = now - T0,
+          ut = Math.min(1, t / T_TILT),
+          us = Math.min(1, t / T_SPIN);
+        cam.style.setProperty("--tilt", (tilt0 * (1 - eio(ut))).toFixed(2) + "deg");
+        cam.style.setProperty("--zoom", (zoom0 + (1 - zoom0) * eio(ut)).toFixed(3));
+        drawRot = r0 + (r1 - r0) * ease(us);
+        tbl.style.setProperty("--rot", drawRot.toFixed(2) + "deg");
+        const sgi = Math.floor((drawRot + seg / 2) / seg);
+        if (sgi !== lastSeg) (lastSeg = sgi), qTick(); // konvert tepadan o'tganda chiqillash
+        if (us < 1) requestAnimationFrame(frame);
+        else resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+    drawRot = r1 % 360;
+    tbl.style.setProperty("--rot", drawRot + "deg");
+  }
+  // tanlangan konvert turgan qism yorishadi
+  qStop();
+  lit.style.setProperty("--from", seg * i - seg / 2 + "deg");
+  lit.classList.add("on");
+  document.querySelectorAll(".qr-slot").forEach((e) => e.classList.add(e.dataset.id === d.picked.id ? "won" : "dim"));
+  await sleep(reduceMotion() ? 0 : 750);
+  drawLast = d;
+  rv.innerHTML = quraCard(d);
+  rv.classList.add("show");
+  qReveal();
+  return d;
+}
 window.drawRun = async () => {
   if (drawBusy || drawPeople() < 2) return;
   const title = ($("rzTitle")?.value || "").trim();
-  const teams = drawSelTeams();
   drawBusy = true;
   drawLast = null;
-  document.querySelectorAll(".rz-name, #rzTitle, #rzGo").forEach((b) => (b.disabled = true));
-  $("qrScene")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
-  let x;
+  drawRun_ = [];
+  quraPaint(); // tugmalar o'chadi, sahna qayta tayyorlanadi
+  if ($("rzTitle")) $("rzTitle").value = title;
+  if (!document.fullscreenElement) $("qrScene")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
   try {
-    x = await api("/api/action", { action: "draw", payload: { teamIds: teams.map((t) => t.id), exclude: [...drawSkip], title } });
-  } catch (e) {
-    drawBusy = false;
-    flash(e.message, true);
-    return draw();
-  }
-  const d = x.data.draws[0];
-  const done = () => {
-    data = x.data;
-    normalize();
-    drawLast = d;
-    drawBusy = false;
-    draw();
-    const rv = $("qrReveal");
-    if (rv) {
-      rv.innerHTML = drawRevealHTML(d);
-      rv.classList.add("show", "open", "still");
+    for (let k = 0; k < quraCfg.tries; k++) {
+      if (drawPeople() < 2) break;
+      const d = await quraOnce(title);
+      drawRun_.push(d);
+      if (quraCfg.exclude) drawSkip.add(d.picked.id + "|" + d.picked.member);
+      if (k < quraCfg.tries - 1) {
+        await sleep(2600);
+        $("qrReveal")?.classList.remove("show");
+        await sleep(450);
+      }
     }
-    document.querySelectorAll(".qr-slot").forEach((e) => e.classList.add(e.dataset.id === d.picked.id ? "lifted" : "dim"));
-    if ($("rzTitle")) $("rzTitle").value = title;
-  };
-  const cam = $("qrCam"),
-    tbl = $("qrTable"),
-    scene = $("qrScene"),
-    rv = $("qrReveal");
-  if (!cam || !tbl || reduceMotion()) return done();
-  scene.classList.remove("revealed");
-  rv.className = "qr-reveal";
-  rv.innerHTML = "";
-  document.querySelectorAll(".qr-slot").forEach((e) => e.classList.remove("won", "dim"));
-  // Yakuniy burchak: tanlangan konvert tepadagi ko'rsatkich ostida to'xtaydi (soat strelkasi bo'yicha, 2 aylana + qoldiq)
-  const i = teams.findIndex((t) => t.id === d.picked.id),
-    n = teams.length,
-    a = (360 / n) * i;
-  const r0 = drawRot,
-    base = (((-a - r0) % 360) + 360) % 360,
-    r1 = r0 + base + 360 * 2;
-  const tilt0 = parseFloat(cam.style.getPropertyValue("--tilt")) || 0,
-    zoom0 = parseFloat(cam.style.getPropertyValue("--zoom")) || 1;
-  const T_TILT = 2400, T_SPIN = 6000, T0 = performance.now();
-  // Yumshoq aylanish: tezlik 0 dan silliq ortadi (14%), so'ng uzluksiz va bir tekis kamayib 0 da to'xtaydi.
-  // Burchak = tezlikning integrali (jadval), shuning uchun hech qayerda sakrash yo'q.
-  const SPIN_LUT = (() => {
-    const N = 600, k = 0.14, out = [0];
-    let acc = 0;
-    const vel = (u) => (u < k ? Math.sin((u / k) * Math.PI / 2) ** 2 : (1 - (u - k) / (1 - k)) ** 3.2);
-    for (let i = 1; i <= N; i++) out.push((acc += vel((i - 0.5) / N)));
-    return out.map((x) => x / acc);
-  })();
-  const ease = (u) => {
-      const p = Math.min(1, Math.max(0, u)) * (SPIN_LUT.length - 1),
-        i = Math.floor(p);
-      return i >= SPIN_LUT.length - 1 ? 1 : SPIN_LUT[i] + (SPIN_LUT[i + 1] - SPIN_LUT[i]) * (p - i);
-    },
-    eio = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
-  const frame = (now) => {
-    if (!$("qrTable")) return done();
-    const t = now - T0,
-      ut = Math.min(1, t / T_TILT),
-      us = Math.min(1, Math.max(0, (t - 150) / T_SPIN));
-    cam.style.setProperty("--tilt", (tilt0 * (1 - eio(ut))).toFixed(2) + "deg");
-    cam.style.setProperty("--zoom", (zoom0 + (1 - zoom0) * eio(ut)).toFixed(3));
-    drawRot = r0 + (r1 - r0) * ease(us);
-    tbl.style.setProperty("--rot", drawRot.toFixed(2) + "deg");
-    if (us < 1) return requestAnimationFrame(frame);
-    drawRot = r1 % 360;
-    tbl.style.setProperty("--rot", drawRot + "deg");
-    // tanlangan konvert ko'tariladi, markazga keladi va ochiladi
-    const slot = document.querySelector(`.qr-slot[data-id="${d.picked.id}"]`);
-    slot?.classList.add("won");
-    document.querySelectorAll(".qr-slot:not(.won)").forEach((e) => e.classList.add("dim"));
-    setTimeout(() => {
-      rv.innerHTML = drawRevealHTML(d);
-      rv.classList.add("show");
-      slot?.classList.add("lifted");
-      setTimeout(() => rv.classList.add("open"), 850);
-      setTimeout(done, 2900);
-    }, 700);
-  };
-  requestAnimationFrame(frame);
+  } catch (e) {
+    flash(e.message, true);
+  }
+  drawBusy = false;
+  quraRefresh();
 };
 
 function selectedTour() {
