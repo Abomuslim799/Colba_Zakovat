@@ -196,6 +196,7 @@ function removeTeam(s, tm) {
 function safeState(src, user) {
   const s = structuredClone(src);
   if (isStaff(user)) return s;
+  delete s.draws;
   const myIds = new Set(s.teams.filter((t) => t.createdBy === user.id).map((t) => t.id));
   for (const t of s.tours) {
     if (!t.published) {
@@ -591,6 +592,19 @@ app.post('/api/action', requires('staff'), (req, res) => {
     const t = s.tours.find((x) => x.id === Number(payload.tourId));
     const tm = s.teams.find((x) => x.id === payload.teamId);
     switch (action) {
+      case 'draw': {
+        // Randomayzer: belgilangan jamoalardan bittasini serverda (kriptografik tasodif bilan) tanlaydi
+        const ids = [...new Set(Array.isArray(payload.teamIds) ? payload.teamIds.map(String) : [])];
+        const pool = ids.map((id) => s.teams.find((x) => x.id === id && x.approved && x.status === 'approved')).filter(Boolean);
+        if (pool.length < 2) bad('Kamida 2 ta tasdiqlangan jamoani belgilang');
+        if (pool.length !== ids.length) bad('Belgilangan jamoalardan biri topilmadi yoki faol emas — sahifani yangilang');
+        const picked = pool[crypto.randomInt(pool.length)];
+        const title = String(payload.title || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+        s.draws = [{ id: 'd' + crypto.randomUUID(), at: Date.now(), by: req.user.name, title,
+          pool: pool.map((x) => ({ id: x.id, name: x.name })), picked: { id: picked.id, name: picked.name } }]
+          .concat(s.draws || []).slice(0, 100);
+        return `Tanlandi: ${picked.name}`;
+      }
       case 'approveTeam':
         if (!tm || tm.status !== 'pending') bad('Jamoa topilmadi yoki allaqachon ko‘rib chiqilgan');
         if (similar(tm.name, s.teams.filter((x) => x.approved), tm.id)) bad('Tasdiqlangan jamoalar orasida o‘xshash nom bor');

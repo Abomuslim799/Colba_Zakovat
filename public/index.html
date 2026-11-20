@@ -167,6 +167,8 @@ body.is-auth #app.shell{max-width:none;padding:0}
 
 
 
+
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -380,6 +382,31 @@ main.shell{overflow-x:clip}
 .chg-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin:12px 0}
 .chg-cols>div{min-width:0}
 .chg-box .chg-name strong,.chg-admin .chg-name strong{display:inline;margin:0}
+
+/* Randomayzer */
+.rz-stage{background:radial-gradient(120% 90% at 50% 0%,#164a37,#0b2a1f 70%);border-radius:18px;padding:20px;color:#f3f6f1;display:flex;flex-direction:column;gap:18px}
+.rz-stage:fullscreen{border-radius:0;padding:5vh 5vw;justify-content:center}
+.rz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:8px}
+@media (max-width:640px){.rz-stage{padding:14px}.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:10px}}
+.rz-stage:fullscreen .rz-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.rz-name{font:600 14px/1.25 var(--body,inherit);text-align:left;padding:11px 13px;border-radius:12px;border:1px solid rgba(243,246,241,.14);background:rgba(243,246,241,.04);color:rgba(243,246,241,.45);cursor:pointer;transition:background .12s,color .12s,border-color .12s,transform .12s;min-width:0;overflow-wrap:anywhere}
+.rz-stage:fullscreen .rz-name{font-size:22px;padding:16px 18px}
+.rz-name.on{color:#f3f6f1;border-color:rgba(243,246,241,.32);background:rgba(243,246,241,.09)}
+.rz-name.hot{background:var(--brass,#e2b44b);color:#1b1404;border-color:var(--brass,#e2b44b);transform:scale(1.04)}
+.rz-name.won{background:var(--brass,#e2b44b);color:#1b1404;border-color:#fff3c8;box-shadow:0 0 0 3px rgba(226,180,75,.35),0 0 28px rgba(226,180,75,.45)}
+.rz-name:disabled{cursor:default}
+.rz-result{min-height:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.rz-result:empty{display:none}
+.rz-result .rz-label{font-size:13px;color:rgba(243,246,241,.7)}
+.rz-result strong{font:800 clamp(28px,5vw,56px)/1.1 var(--display,inherit);color:var(--brass,#e2b44b);overflow-wrap:anywhere}
+.rz-stage:fullscreen .rz-result strong{font-size:clamp(48px,8vw,110px)}
+.rz-result .rz-meta{font-size:12px;color:rgba(243,246,241,.55)}
+.rz-result.pop strong{animation:rzPop .6s cubic-bezier(.2,1.4,.4,1)}
+@keyframes rzPop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.rz-actions{gap:8px;flex-wrap:wrap}
+.rz-actions .field{flex:1 1 260px;min-width:0;background:rgba(255,255,255,.95)}
+.rz-go{flex:0 0 auto;min-width:140px}
+@media (prefers-reduced-motion:reduce){.rz-name,.rz-result.pop strong{transition:none;animation:none}}
 </style></head><body><header class="top"><div class="shell topin"><a class="brand" href="#" onclick="go('home');return false"><img class="logo" src="/logo.png" alt="COLBA"><div><div class="brandname">COLBA <span class="highlight">ZAKOVAT</span></div><span class="subbrand">LIGA PLATFORMASI</span></div></a><nav class="nav" id="nav"></nav><div class="tools" id="tools"></div></div></header><main class="shell" id="app"></main><footer class="shell foot">COLBA Zakovat Ligasi · Intellektual musobaqalar boshqaruv tizimi<br>G‘oya muallifi va platforma yaratuvchisi: <strong>Adhamjon Zokirjanov</strong></footer><div id="modalRoot"></div>
 <script>
 "use strict";
@@ -1973,6 +2000,7 @@ function adminPage() {
   const items = [
     ["scores", "Javoblarni kiritish"],
     ["participation", "Tur jamoalari"],
+    ["random", "Randomayzer"],
     ["teamsadmin", "Jamoalar"],
     ["appealsadmin", "Apellyatsiyalar"],
     ["supportadmin", `Yordam${data.support.filter((x) => x.status === APPEAL_SENT).length ? " (" + data.support.filter((x) => x.status === APPEAL_SENT).length + ")" : ""}`],
@@ -1985,7 +2013,7 @@ function adminPage() {
       ["settings", "Huquq va sozlamalar"],
       ["monitoring", "Monitoring"],
     );
-  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "supportadmin" ? supportAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
+  return `<div class="pagehead"><h1>Boshqaruv paneli</h1><p>${roleLabel()} · Kiritilgan javoblar ommaviy saytda ko‘rinmaydi.</p></div><div class="ownerlayout"><div class="card side">${items.map(([k, l]) => `<button class="${state.adminTab === k ? "active" : ""}" onclick="adminTab('${k}')">${h(l)}</button>`).join("")}</div><div style="min-width:0">${msgs()}${state.adminTab === "scores" ? scoresAdmin() : state.adminTab === "participation" ? participationAdmin() : state.adminTab === "random" ? randomAdmin() : state.adminTab === "teamsadmin" ? teamsAdmin() : state.adminTab === "appealsadmin" ? appealsAdmin() : state.adminTab === "supportadmin" ? supportAdmin() : state.adminTab === "site" && state.role === "owner" ? siteAdmin() : state.adminTab === "tours" && state.role === "owner" ? toursAdmin() : state.adminTab === "settings" && state.role === "owner" ? settingsAdmin() : state.adminTab === "users" ? usersAdmin() : state.adminTab === "monitoring" && state.role === "owner" ? monitoringAdmin() : scoresAdmin()}</div></div>`;
 }
 window.adminTab = async (k) => {
   state.adminTab = k;
@@ -2002,6 +2030,126 @@ window.adminTab = async (k) => {
   }
   draw();
 };
+
+// ---------- Randomayzer: belgilangan jamoalardan bittasini tasodifiy tanlash ----------
+// Tanlov serverda bajariladi (crypto.randomInt) va tarixga yoziladi; ekrandagi aylanish faqat ko'rsatish uchun.
+let drawSel = null,
+  drawBusy = false,
+  drawLast = null;
+const drawTeams = () => data.teams.filter((tm) => tm.approved && tm.status === "approved").sort((a, b) => a.name.localeCompare(b.name, "uz"));
+function drawSelSet() {
+  const ok = new Set(drawTeams().map((t) => t.id));
+  if (!drawSel) drawSel = new Set(ok);
+  for (const id of [...drawSel]) if (!ok.has(id)) drawSel.delete(id);
+  return drawSel;
+}
+function randomAdmin() {
+  const teams = drawTeams(),
+    sel = drawSelSet(),
+    t = selectedTour();
+  const hist = (data.draws || []).slice(0, 12);
+  const chip = (tm) =>
+    `<button class="rz-name${sel.has(tm.id) ? " on" : ""}${drawLast?.picked.id === tm.id ? " won" : ""}" data-id="${tm.id}" onclick="drawToggle('${tm.id}')" ${drawBusy ? "disabled" : ""} aria-pressed="${sel.has(tm.id)}">${h(tm.name)}</button>`;
+  return `<div class="card pad"><div class="row between" style="flex-wrap:wrap;gap:10px"><div><h2 style="margin:0">Randomayzer</h2><p class="notice" style="margin:4px 0 0">Jamoalarni belgilang — tizim ular orasidan bittasini tasodifiy tanlaydi. Tanlov serverda bajariladi va tarixga yoziladi, uni qayta o‘zgartirib bo‘lmaydi.</p></div><button class="pill" onclick="drawFullscreen()" title="Proyektor uchun">⛶ To‘liq ekran</button></div>
+<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 10px"><button class="smallbtn soft" onclick="drawPick('all')">Hammasi</button><button class="smallbtn pill" onclick="drawPick('none')">Tozalash</button>${t && t.activeTeams?.length ? `<button class="smallbtn pill" onclick="drawPick('tour')">${h(t.title)} jamoalari (${t.activeTeams.length})</button>` : ""}<span class="notice" style="align-self:center">Belgilangan: <strong id="rzCount">${sel.size}</strong> / ${teams.length}</span></div>
+<div class="rz-stage" id="rzStage"><div class="rz-grid" id="rzGrid">${teams.map(chip).join("") || '<div class="empty">Tasdiqlangan jamoalar yo‘q</div>'}</div>
+<div class="rz-result" id="rzResult" aria-live="assertive">${drawLast ? `<span class="rz-label">${h(drawLast.title || "Tanlangan jamoa")}</span><strong>${h(drawLast.picked.name)}</strong><span class="rz-meta">${drawLast.pool.length} ta jamoadan</span>` : ""}</div>
+<div class="row rz-actions"><input class="field" id="rzTitle" maxlength="120" placeholder="Nima uchun tanlanmoqda (ixtiyoriy), masalan: birinchi bo‘lib javob beradi" ${drawBusy ? "disabled" : ""}><button class="primary rz-go" id="rzGo" onclick="drawRun()" ${drawBusy || sel.size < 2 ? "disabled" : ""}>🎲 Tanlash</button>${drawLast && !drawBusy && sel.has(drawLast.picked.id) && sel.size > 2 ? `<button class="pill" onclick="drawAgainWithout()">Uni chiqarib, yana tanlash</button>` : ""}</div></div></div>
+<div class="card pad" style="margin-top:14px"><h3 class="h3" style="margin-top:0">Tanlovlar tarixi</h3>${
+    hist.length
+      ? `<div class="tablewrap"><table class="datatable"><thead><tr><th>Vaqt</th><th>Maqsad</th><th>Tanlandi</th><th>Nechtadan</th><th>Kim</th></tr></thead><tbody>${hist.map((d) => `<tr><td style="white-space:nowrap">${fmtDate(d.at)}</td><td>${h(d.title || "—")}</td><td><strong>${h(d.picked.name)}</strong></td><td title="${h(d.pool.map((x) => x.name).join(", "))}">${d.pool.length}</td><td>${h(d.by)}</td></tr>`).join("")}</tbody></table></div>`
+      : '<p class="notice">Hali tanlov o‘tkazilmagan.</p>'
+  }</div>`;
+}
+window.drawToggle = (id) => {
+  if (drawBusy) return;
+  const sel = drawSelSet();
+  sel.has(id) ? sel.delete(id) : sel.add(id);
+  draw();
+};
+window.drawPick = (k) => {
+  const sel = drawSelSet();
+  sel.clear();
+  if (k === "all") drawTeams().forEach((t) => sel.add(t.id));
+  if (k === "tour") (selectedTour()?.activeTeams || []).forEach((id) => drawTeams().some((t) => t.id === id) && sel.add(id));
+  drawLast = null;
+  draw();
+};
+window.drawAgainWithout = () => {
+  drawSelSet().delete(drawLast.picked.id);
+  const title = $("rzTitle")?.value || "";
+  drawLast = null;
+  draw();
+  if ($("rzTitle")) $("rzTitle").value = title;
+  drawRun();
+};
+window.drawFullscreen = () => {
+  const el = $("rzStage");
+  if (!el) return;
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else el.requestFullscreen?.().catch(() => {});
+};
+window.drawRun = async () => {
+  const sel = drawSelSet();
+  if (drawBusy || sel.size < 2) return;
+  const title = ($("rzTitle")?.value || "").trim();
+  drawBusy = true;
+  drawLast = null;
+  document.querySelectorAll(".rz-name").forEach((b) => b.classList.remove("won", "hot"));
+  $("rzResult").innerHTML = "";
+  $("rzGo").disabled = true;
+  document.querySelectorAll(".rz-name, #rzTitle").forEach((b) => (b.disabled = true));
+  let x;
+  try {
+    x = await api("/api/action", { action: "draw", payload: { teamIds: [...sel], title } });
+  } catch (e) {
+    drawBusy = false;
+    flash(e.message, true);
+    return draw();
+  }
+  const d = x.data.draws[0];
+  // aylanish: belgilanganlar bo'ylab yugurib, sekinlashib g'olibda to'xtaydi (~3.6 s)
+  const btns = [...document.querySelectorAll(".rz-name.on")];
+  const order = btns.map((b) => b.dataset.id);
+  const target = order.indexOf(d.picked.id);
+  const n = order.length;
+  const steps = reduceMotion() ? 0 : n * 2 + ((target - (n * 2) % n + n) % n) + Math.max(0, 14 - n * 2);
+  let k = 0,
+    pos = 0;
+  const T = 3600,
+    delays = Array.from({ length: steps }, (_, i) => i / Math.max(1, steps - 1));
+  const sum = delays.reduce((a, u) => a + (0.15 + u * u * 1.85), 0);
+  const show = (i) => {
+    btns.forEach((b) => b.classList.remove("hot"));
+    btns[i]?.classList.add("hot");
+  };
+  const finish = () => {
+    data = x.data;
+    normalize();
+    drawLast = d;
+    drawBusy = false;
+    draw();
+    const r = $("rzResult");
+    if (r) {
+      r.classList.remove("pop");
+      void r.offsetWidth;
+      r.classList.add("pop");
+    }
+    if ($("rzTitle")) $("rzTitle").value = title;
+  };
+  const tick = () => {
+    if (k >= steps) return finish();
+    show(pos);
+    const u = k / Math.max(1, steps - 1);
+    k++;
+    pos = (pos + 1) % n;
+    setTimeout(tick, (T * (0.15 + u * u * 1.85)) / sum);
+  };
+  pos = 0;
+  if (steps) tick();
+  else finish();
+};
+
 function selectedTour() {
   return tour(state.tourId) || listTours()[0];
 }
@@ -2573,6 +2721,7 @@ function monStat(label, value, sub) {
   return `<div class="card pad" style="padding:16px"><span class="label notice">${label}</span><div style="font-size:21px;font-weight:800;margin:4px 0">${value}</div><div class="notice">${sub || ""}</div></div>`;
 }
 const AUDIT_LABELS = {
+  draw: "Randomayzer tanlovi",
   backup: "Zaxira nusxa yuklab oldi",
   login: "Kirdi", login_failed: "Kirish xato (parol)", register: "Ro‘yxatdan o‘tdi", team_register: "Jamoa arizasi",
   team_close: "Jamoa faoliyatini tugatdi", approveTeam: "Jamoani tasdiqladi", rejectTeam: "Arizani rad etdi",
