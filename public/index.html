@@ -172,6 +172,7 @@ body.is-auth #app.shell{max-width:none;padding:0}
 
 
 
+
 /* ===== Glass dizayn, navigatsiya, profil, medallar ===== */
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{background:radial-gradient(1100px 600px at 8% -12%,#d5eee0 0%,transparent 60%),radial-gradient(900px 520px at 104% -4%,#f3e7c9 0%,transparent 55%),radial-gradient(1100px 700px at 50% 118%,#cde6d8 0%,transparent 62%),#edf3ef;background-attachment:fixed;min-height:100vh}
@@ -478,6 +479,21 @@ main.shell{overflow-x:clip}
 @media (max-width:860px){.qr-wrap{grid-template-columns:1fr}.qr-scene{--d:min(86vw,460px)}.rz-stage{padding:14px}.rz-stage:fullscreen .qr-scene{--d:min(86vw,58vh)}}
 @media (max-width:640px){.rz-grid{grid-template-columns:1fr 1fr}.rz-name{font-size:13px;padding:9px 10px}}
 @media (prefers-reduced-motion:reduce){.qr-card,.qr-env,.qr-lit,.qt-B::before{animation:none!important;transition:none!important}}
+
+/* Sayt ichidagi dialog (prompt/confirm o'rniga) */
+.dlg-wrap{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;background:rgba(6,20,14,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:dlgIn .18s ease}
+.dlg{width:min(100%,440px);max-height:calc(100dvh - 32px);overflow:auto;background:#fff;color:#13241d;border-radius:18px;padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:10px;animation:dlgPop .22s cubic-bezier(.22,1,.36,1)}
+.dlg h3{margin:0;font:700 17px var(--display,inherit)}
+.dlg-msg{margin:0;font-size:14px;line-height:1.5;color:#3d4d45}
+.dlg-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#5d6b64}
+.dlg-field .field{font-size:16px}
+.dlg-err{margin:0;color:#b42318;font-size:13px}
+.dlg-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;position:sticky;bottom:-20px;background:#fff;padding:10px 0 2px}
+.dlg-btns button{min-width:100px}
+.danger-fill{background:#b42318!important;border-color:#b42318!important}
+@keyframes dlgIn{from{opacity:0}}@keyframes dlgPop{from{opacity:0;transform:translateY(10px) scale(.98)}}
+@media (max-width:640px){.dlg-wrap{align-items:end;padding:0}.dlg{width:100%;border-radius:18px 18px 0 0;max-height:92dvh;padding-bottom:calc(20px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-motion:reduce){.dlg-wrap,.dlg{animation:none}}
 
 </style></head><body><header class="top"><div class="shell topin"><a class="brand" href="#" onclick="go('home');return false"><img class="logo" src="/logo.png" alt="COLBA"><div><div class="brandname">COLBA <span class="highlight">ZAKOVAT</span></div><span class="subbrand">LIGA PLATFORMASI</span></div></a><nav class="nav" id="nav"></nav><div class="tools" id="tools"></div></div></header><main class="shell" id="app"></main><footer class="shell foot">COLBA Zakovat Ligasi · Intellektual musobaqalar boshqaruv tizimi<br>G‘oya muallifi va platforma yaratuvchisi: <strong>Adhamjon Zokirjanov</strong></footer><div id="modalRoot"></div>
 <script>
@@ -1134,7 +1150,7 @@ window.uploadPhoto = async (input, id) => {
   }
 };
 window.deletePhoto = async (pid, id) => {
-  if (!confirm("Suratni o‘chirasizmi?")) return;
+  if (!await askConfirm("Suratni o‘chirasizmi?")) return;
   try {
     const x = await api("/api/photos/" + encodeURIComponent(pid) + "/delete", {});
     data = x.data;
@@ -1164,6 +1180,49 @@ window.saveTeamProfile = async (id) => {
   } catch (e) {
     flash(e.message, true);
   }
+};
+
+// ---------- Sayt ichidagi dialog (brauzerning prompt/confirm oynalari o'rniga) ----------
+// Ba'zi telefon brauzerlari, Telegram ichidagi brauzer va bosh ekranga qo'shilgan sayt prompt()/confirm() ni ko'rsatmaydi.
+function askDialog({ title = "", message = "", fields = [], ok = "Tasdiqlash", cancel = "Bekor qilish", danger = false, validate }) {
+  return new Promise((resolve) => {
+    const prevFocus = document.activeElement;
+    const wrap = document.createElement("div");
+    wrap.className = "dlg-wrap";
+    wrap.innerHTML = `<form class="dlg" role="dialog" aria-modal="true" novalidate>${title ? `<h3>${h(title)}</h3>` : ""}${message ? `<p class="dlg-msg">${h(message).replace(/\n/g, "<br>")}</p>` : ""}${fields
+      .map((f, i) => `<label class="dlg-field"><span>${h(f.label)}</span><input class="field" name="f${i}" type="${f.type || "text"}" value="${h(f.value ?? "")}" ${f.placeholder ? `placeholder="${h(f.placeholder)}"` : ""} maxlength="${f.max || 120}" autocomplete="off"></label>`)
+      .join("")}<p class="dlg-err" hidden></p><div class="dlg-btns"><button type="button" class="pill" data-x>${h(cancel)}</button><button type="submit" class="primary${danger ? " danger-fill" : ""}">${h(ok)}</button></div></form>`;
+    (document.fullscreenElement || document.body).appendChild(wrap);
+    const form = wrap.querySelector("form"),
+      err = wrap.querySelector(".dlg-err");
+    const close = (v) => {
+      wrap.remove();
+      document.removeEventListener("keydown", onKey);
+      prevFocus?.focus?.();
+      resolve(v);
+    };
+    const onKey = (e) => e.key === "Escape" && close(null);
+    document.addEventListener("keydown", onKey);
+    wrap.addEventListener("click", (e) => e.target === wrap && close(null));
+    wrap.querySelector("[data-x]").onclick = () => close(null);
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const vals = fields.map((_, i) => form.elements["f" + i].value);
+      const msg = validate?.(vals);
+      if (msg) {
+        err.textContent = msg;
+        err.hidden = false;
+        return;
+      }
+      close(fields.length ? vals : true);
+    };
+    setTimeout(() => (form.querySelector("input") || form.querySelector("[type=submit]")).focus(), 30);
+  });
+}
+const askConfirm = async (message, opts = {}) => !!(await askDialog({ message, ok: "Ha", cancel: "Yo‘q", ...opts }));
+const askText = async (title, value = "", opts = {}) => {
+  const r = await askDialog({ title, fields: [{ label: opts.label || title, value, type: opts.type, max: opts.max }], ok: opts.ok || "Saqlash", validate: opts.validate });
+  return r ? r[0] : null;
 };
 
 // ---------- Sardor: jamoa nomi va tarkibini o'zgartirish arizasi ----------
@@ -1258,7 +1317,7 @@ window.submitTeamChange = async (e, id) => {
   }
 };
 window.cancelTeamChange = async (id, ask) => {
-  if (ask && !confirm("O‘zgartirish arizasini qaytarib olasizmi?")) return;
+  if (ask && !await askConfirm("O‘zgartirish arizasini qaytarib olasizmi?")) return;
   try {
     const x = await api("/api/teams/" + encodeURIComponent(id) + "/change/cancel", {});
     data = x.data;
@@ -1274,11 +1333,11 @@ function changeRequestCard(t) {
   return `<div class="card chg-admin" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="flex-wrap:wrap;gap:8px"><div><strong>${h(t.name)}</strong> <span class="tag" style="background:#fff4dc;color:#9a6a00">o‘zgartirish arizasi</span><div class="notice">Yubordi: ${h(c.byName || t.createdByName || "sardor")} · ${h(new Date(c.at).toLocaleString("uz-UZ"))}${t.branch ? " · " + h(t.branch) : ""}</div></div></div><div class="chg-cols"><div><span class="notice">Hozirgi tarkib</span><ol class="pmembers">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol></div><div><span class="notice">Yangi holat</span>${changeDiff(t, c)}</div></div><div class="row" style="gap:8px"><button class="primary" onclick="approveChange('${t.id}')">✓ Tasdiqlash</button><button class="pill" onclick="rejectChange('${t.id}')">Rad etish</button></div></div>`;
 }
 window.approveChange = async (id) => {
-  if (confirm(`“${team(id)?.name}” jamoasining yangi nomi va tarkibini tasdiqlaysizmi?`))
+  if (await askConfirm(`“${team(id)?.name}” jamoasining yangi nomi va tarkibini tasdiqlaysizmi?`))
     if (await mutate("approveChange", { teamId: id })) flash("O‘zgarishlar kuchga kirdi");
 };
 window.rejectChange = async (id) => {
-  const reason = prompt("Rad etish sababi (sardorga ko‘rinadi, ixtiyoriy):", "");
+  const reason = await askText("Rad etish sababi", "", { label: "Sardorga ko‘rinadi (ixtiyoriy)", ok: "Rad etish", max: 300 });
   if (reason === null) return;
   if (await mutate("rejectChange", { teamId: id, reason })) flash("Ariza rad etildi");
 };
@@ -1779,7 +1838,7 @@ window.closeMyTeam = async (id) => {
   const t = team(id);
   const pending = t?.status === "pending";
   if (
-    !confirm(
+    !await askConfirm(
       pending
         ? `“${t?.name}” arizasini qaytarib olasizmi?`
         : `“${t?.name}” faoliyatini tugatasizmi?\n\nJamoa ro‘yxatdan chiqadi, keyingi turlarda qatnasha olmaydi. E’lon qilingan natijalari reyting tarixida qoladi. Bu amalni qaytarib bo‘lmaydi.`,
@@ -2412,13 +2471,13 @@ window.flip = async (id, q) => {
   await mutate("flip", { tourId: t.id, teamId: id, q });
 };
 window.publishTour = async (id) => {
-  if (confirm("Natijalarni e’lon qilishni tasdiqlaysizmi?")) {
+  if (await askConfirm("Natijalarni e’lon qilishni tasdiqlaysizmi?")) {
     if (await mutate("publishTour", { tourId: id }))
       flash("Natijalar tasdiqlandi va reytingga qo‘shildi.");
   }
 };
 window.unpublishTour = async (id) => {
-  if (confirm("Natijalarni qayta ochasizmi?"))
+  if (await askConfirm("Natijalarni qayta ochasizmi?"))
     await mutate("unpublishTour", { tourId: id });
 };
 function participationAdmin() {
@@ -2440,7 +2499,7 @@ function participationAdmin() {
 }
 window.setParticipationAll = async (on) => {
   const t = selectedTour();
-  if (!on && !confirm(`${t.title}: barcha jamoalar belgisi olib tashlansinmi? Kiritilgan javoblar o‘chmaydi.`)) return;
+  if (!on && !await askConfirm(`${t.title}: barcha jamoalar belgisi olib tashlansinmi? Kiritilgan javoblar o‘chmaydi.`)) return;
   if (await mutate("participationAll", { tourId: t.id, on }))
     flash(on ? "Barcha tasdiqlangan jamoalar turga qo‘shildi" : "Barcha belgilar olib tashlandi");
 };
@@ -2484,7 +2543,7 @@ function adminTeamCard(t) {
     ? '<span class="notice">Natijalar tarixida saqlanadi.</span>'
     : pending
     ? `<button class="primary" onclick="approveTeam('${t.id}')">✓ Tasdiqlash</button><button class="pill" onclick="rejectTeam('${t.id}')">Rad etish</button>`
-    : `${isOwner() && t.approved ? `<button class="pill" onclick="editTeam('${t.id}')">Nom va filialni tahrirlash</button>` : ""}<button class="smallbtn danger" onclick="deleteTeam('${t.id}')">O‘chirish</button>`;
+    : `${isOwner() && t.approved ? `<button class="pill" onclick="editTeam('${t.id}')">Tahrirlash (nom, filial, o‘yinchilar)</button>` : ""}<button class="smallbtn danger" onclick="deleteTeam('${t.id}')">O‘chirish</button>`;
   return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div class="row between" style="cursor:pointer" onclick="toggleAdminTeam('${t.id}')"><div><strong>${h(t.name)}</strong> ${status}${imported ? ' <span class="tag" style="background:#e7f0fd;color:#2457a6">import</span>' : ""}<div class="notice">${members(t).length} a’zo${t.branch ? " · " + h(t.branch) : ""}${!t.createdBy && t.approved ? " · sardor hisobi biriktirilmagan" : ""}</div></div><span class="muted">${open ? "▴ Yopish" : "▾ Ochish"}</span></div>${
     open
       ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><ol class="memberlist" style="margin-top:0">${members(t).map((m, j) => `<li>${h(m)}${j === 0 ? ' <span class="tag">Sardor</span>' : ""}</li>`).join("")}</ol><p class="notice" style="margin:10px 0">${origin}</p>${captainRow}<div class="row" style="gap:8px">${actions}</div></div>`
@@ -2503,13 +2562,13 @@ window.approveTeam = async (id) => {
   if (await mutate("approveTeam", { teamId: id })) flash("Jamoa tasdiqlandi");
 };
 window.rejectTeam = async (id) => {
-  if (confirm(`“${team(id)?.name}” arizasini rad etasizmi?`))
+  if (await askConfirm(`“${team(id)?.name}” arizasini rad etasizmi?`))
     if (await mutate("rejectTeam", { teamId: id })) flash("Ariza rad etildi");
 };
 window.deleteTeam = async (id) => {
   const t = team(id);
   if (
-    confirm(
+    await askConfirm(
       `“${t?.name}” jamoasini o‘chirasizmi?\n\nE’lon qilinmagan turlardagi javoblari va ochiq apellyatsiyalari o‘chadi. Agar jamoa e’lon qilingan turda qatnashgan bo‘lsa, natijalari saqlanib, jamoa “faoliyati tugatilgan” bo‘ladi.`,
     )
   ) {
@@ -2525,12 +2584,28 @@ window.deleteTeam = async (id) => {
   }
 };
 window.editTeam = async (id) => {
-  const t = team(id);
-  const name = prompt("Jamoa nomi:", t.name);
-  if (name === null) return;
-  const branch = prompt("Jamoa filiali:", t.branch || "");
-  if (branch === null) return;
-  if (await mutate("editTeam", { teamId: id, name, branch })) flash("Jamoa o‘zgartirildi");
+  const t = team(id),
+    ms = members(t);
+  const r = await askDialog({
+    title: "Jamoani tahrirlash",
+    message: "O‘zgarishlar darhol kuchga kiradi. Eski holat jamoa tarixida saqlanadi.",
+    fields: [
+      { label: "Jamoa nomi", value: t.name, max: 80 },
+      { label: "Filial", value: t.branch || "", max: 60 },
+      ...Array.from({ length: 8 }, (_, i) => ({ label: i === 0 ? "1. Jamoa sardori" : `${i + 1}. O‘yinchi${i < 4 ? "" : " (ixtiyoriy)"}`, value: ms[i] || "", max: 100, placeholder: "Ism Familiya" })),
+    ],
+    ok: "Saqlash",
+    validate: (v) => {
+      const list = v.slice(2).map((x) => x.trim().replace(/\s+/g, " ")).filter(Boolean);
+      if (!v[0].trim()) return "Jamoa nomini kiriting.";
+      if (list.length < 4) return `Kamida 4 nafar o‘yinchi kerak (hozir ${list.length}).`;
+      if (list.some((x) => x.length < 3)) return "Har bir ism-familiya kamida 3 harf bo‘lsin.";
+      if (new Set(list.map((x) => x.toLocaleLowerCase("uz"))).size !== list.length) return "Bir o‘yinchi ikki marta yozilgan.";
+    },
+  });
+  if (!r) return;
+  const membersNew = r.slice(2).map((x) => x.trim().replace(/\s+/g, " ")).filter(Boolean);
+  if (await mutate("editTeam", { teamId: id, name: r[0], branch: r[1], members: membersNew })) flash("Jamoa o‘zgartirildi");
 };
 window.assignCaptain = async (id, userId) => {
   try {
@@ -2685,7 +2760,7 @@ function appealFixRow(a) {
 window.appealFix = async (id) => {
   const a = data.appeals.find((x) => x.id === id),
     t = tour(a?.tourId);
-  if (!a || !confirm(`${team(a.teamId)?.name} · ${t?.title} · ${a.question}-savol javobini o‘zgartirasizmi?${t?.published ? "\n\nTur natijasi e’lon qilingan: o‘rinlar va reyting darhol qayta hisoblanadi." : ""}`))
+  if (!a || !await askConfirm(`${team(a.teamId)?.name} · ${t?.title} · ${a.question}-savol javobini o‘zgartirasizmi?${t?.published ? "\n\nTur natijasi e’lon qilingan: o‘rinlar va reyting darhol qayta hisoblanadi." : ""}`))
     return;
   try {
     const x = await api("/api/action", { action: "appealFix", payload: { id } });
@@ -2733,7 +2808,7 @@ window.addNews = async (e) => {
   });
 };
 window.removeNews = async (id) => {
-  if (confirm("O‘chirasizmi?")) await mutate("removeNews", { id });
+  if (await askConfirm("O‘chirasizmi?")) await mutate("removeNews", { id });
 };
 function toursAdmin() {
   return `<div class="card pad"><h2 style="margin-top:0">Turlar sozlamasi</h2><p class="notice">Tur sonini shu yerdan o‘zgartiring. Har bir tur 3 raunddan va jami 36 savoldan iborat.</p><div class="row"><label><strong>Jami tur soni</strong><br><input class="field" style="width:150px;margin-top:6px" id="tourCount" type="number" min="1" max="36" value="${data.tours.length}"></label><button class="primary" onclick="changeTourCount()">Saqlash</button></div><div class="spacer"></div>${data.tours.map((t) => `<div class="row between" style="padding:13px 0;border-bottom:1px solid var(--line)"><div><strong>${h(t.title)}</strong> <span class="status ${t.published ? "ok" : ""}">${t.published ? "E’lon qilingan" : "Yopiq"}</span></div><button class="smallbtn pill" onclick="renameTour(${t.id})">Nomini o‘zgartirish</button></div>`).join("")}</div>`;
@@ -2742,7 +2817,7 @@ window.changeTourCount = async () => {
   const n = Number($("tourCount").value);
   if (
     n < data.tours.length &&
-    !confirm("Oxirgi turlar o‘chiriladi. Davom etilsinmi?")
+    !await askConfirm("Oxirgi turlar o‘chiriladi. Davom etilsinmi?")
   )
     return;
   await mutate("toursCount", { count: n });
@@ -2751,7 +2826,7 @@ window.changeTourCount = async () => {
 };
 window.renameTour = async (id) => {
   const t = tour(id),
-    title = prompt("Tur nomi:", t.title);
+    title = await askText("Tur nomi", t.title, { max: 60 });
   if (title !== null) await mutate("renameTour", { tourId: id, title });
 };
 function settingsAdmin() {
@@ -2823,7 +2898,7 @@ function usersAdmin() {
 }
 window.deleteUser = async (id) => {
   const u = userList.find((x) => x.id === id);
-  if (!u || !confirm(`“${u.name}” (${u.email}) foydalanuvchisini o‘chirasizmi?\n\nU tizimdan chiqariladi va shu email bilan qayta ro‘yxatdan o‘tishi kerak bo‘ladi. Bu amalni qaytarib bo‘lmaydi.`))
+  if (!u || !await askConfirm(`“${u.name}” (${u.email}) foydalanuvchisini o‘chirasizmi?\n\nU tizimdan chiqariladi va shu email bilan qayta ro‘yxatdan o‘tishi kerak bo‘ladi. Bu amalni qaytarib bo‘lmaydi.`))
     return;
   try {
     const z = await api("/api/users/" + encodeURIComponent(id) + "/delete", {});
@@ -2845,7 +2920,7 @@ window.changeUserRole = async (id, role) => {
 };
 window.resetPassword = async (id) => {
   const u = userList.find((x) => x.id === id);
-  const pw = prompt(`${u?.name || "Foydalanuvchi"} uchun yangi parol (kamida 6 belgi):`);
+  const pw = await askText("Yangi parol", "", { label: `${u?.name || "Foydalanuvchi"} uchun (kamida 6 belgi)`, ok: "Parolni o‘rnatish", validate: (v) => (v[0].length < 6 ? "Parol kamida 6 belgi bo‘lsin." : "") });
   if (pw === null) return;
   try {
     await api("/api/users/" + encodeURIComponent(id) + "/password", {

@@ -755,7 +755,16 @@ app.post('/api/action', requires('staff'), (req, res) => {
         const name = String(payload.name || '').trim().slice(0, 80);
         if (!name) bad('Nom bo‘sh');
         if (similar(name, s.teams, tm.id)) bad('O‘xshash nom, iltimos boshqa nom tanlang');
+        let ms = tm.members;
+        if (payload.members !== undefined) {
+          ms = cleanMembers(payload.members);
+          if (!ms) bad('4–8 nafar a’zoning ism-familiyasi kerak (har biri kamida 3 harf)');
+          if (new Set(ms.map((x) => x.toLocaleLowerCase('uz'))).size !== ms.length) bad('Bir a’zo ikki marta yozilgan');
+        }
+        if (name !== tm.name || JSON.stringify(ms) !== JSON.stringify(tm.members))
+          tm.history = (tm.history || []).concat({ at: Date.now(), by: req.user.name, from: { name: tm.name, members: tm.members }, to: { name, members: ms } }).slice(-20);
         tm.name = name;
+        tm.members = ms;
         if (payload.branch !== undefined) tm.branch = teamImport.fixLetters(payload.branch).slice(0, 60);
         return 'Jamoa o‘zgartirildi';
       }
