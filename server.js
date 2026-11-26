@@ -825,7 +825,7 @@ app.post('/api/support', requires('user'), (req, res) => {
 // ---------- API: monitoring (faqat ega) ----------
 app.get('/api/monitoring', requires('owner'), async (req, res, next) => {
   try {
-    res.json(monitor.report(String(req.query.range || '24h'), readState().data));
+    res.json(await monitor.report(String(req.query.month || ''), readState().data));
   } catch (e) { next(e); }
 });
 

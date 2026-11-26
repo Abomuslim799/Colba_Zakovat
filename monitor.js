@@ -5,8 +5,7 @@ const fs = require('fs');
 const os = require('os');
 
 // Railway narxlari (docs.railway.com/pricing, 2026-11 holatiga)
-const PRICES = { ramGbMonth: 10, cpuVcpuMonth: 20, volumeGbMonth: 0.15, hobbyIncluded: 5, checked: '2026-11' };
-const KEEP_DAYS = 30;
+const KEEP_DAYS = 100; // Railway sarf ma'lumotini 90 kun beradi — oylar bo'yicha ko'rish uchun yetarli
 const SAMPLE_MS = Number(process.env.MONITOR_SAMPLE_MS) || 60_000;
 const SLOW_MS = 1000;
 
@@ -140,36 +139,105 @@ async function start(database, file) {
   });
 }
 
-const RANGES = {
-  '1h': { hours: 1, bucket: 60 },
-  '24h': { hours: 24, bucket: 600 },
-  '7d': { hours: 168, bucket: 3600 },
-  '30d': { hours: 720, bucket: 14400 },
-};
+// Davr — kalendar oyi (Toshkent vaqti, UTC+5). '2026-11' ko'rinishida.
+const TZ_MS = 5 * 3600_000;
+function monthRange(key) {
+  const now = new Date(Date.now() + TZ_MS);
+  let y = now.getUTCFullYear(), m = now.getUTCMonth() + 1;
+  const mm = /^(\d{4})-(\d{2})$/.exec(String(key || ''));
+  if (mm) { y = +mm[1]; m = +mm[2]; }
+  const start = Date.UTC(y, m - 1, 1) - TZ_MS, next = Date.UTC(y, m, 1) - TZ_MS;
+  const end = Math.min(next, Date.now());
+  return { key: `${y}-${String(m).padStart(2, '0')}`, start, end, current: next > Date.now() };
+}
+function monthList() {
+  const out = [], now = new Date(Date.now() + TZ_MS);
+  for (let i = 0; i < 4; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    if (i && d.getTime() - TZ_MS < Date.now() - 90 * 86400_000) break; // Railway 90 kundan eskisini bermaydi
+    out.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  }
+  return out;
+}
+
+// ---------- Railway: tanlangan oyda haqiqatda sarflangan summa ----------
+// Railway API (usage) oy uchun xom sarfni beradi; dollarga Railway CLI dagi narxlar bilan o'giriladi
+// (Usage sahifasidagi hisob bilan bir xil). Token: RAILWAY_API_TOKEN (Account yoki Workspace token).
+const MIN_IN_MONTH = 43_200;
+const RW_PRICE = { MEMORY_USAGE_GB: 10 / MIN_IN_MONTH, CPU_USAGE: 20 / MIN_IN_MONTH, NETWORK_TX_GB: 0.05, DISK_USAGE_GB: 0.15 / MIN_IN_MONTH, BACKUP_USAGE_GB: 0.15 / MIN_IN_MONTH };
+const RW_LABEL = { MEMORY_USAGE_GB: 'Xotira (RAM)', CPU_USAGE: 'Protsessor (CPU)', DISK_USAGE_GB: 'Disk (volume)', NETWORK_TX_GB: 'Chiquvchi trafik', BACKUP_USAGE_GB: 'Zaxira nusxalar' };
+const rwCache = new Map();
+async function railwaySpend(r) {
+  const token = (process.env.RAILWAY_API_TOKEN || '').trim();
+  const projectId = process.env.RAILWAY_PROJECT_ID;
+  if (!token) return { status: 'no_token' };
+  if (!projectId) return { status: 'no_project' };
+  if (r.start < Date.now() - 90 * 86400_000) return { status: 'too_old' };
+  const hit = rwCache.get(r.key);
+  if (hit && Date.now() - hit.at < (r.current ? 10 * 60_000 : 12 * 3600_000)) return hit.data;
+  const query = `query($projectId: String!, $start: DateTime!, $end: DateTime!) {
+    usage(projectId: $projectId, startDate: $start, endDate: $end, includeDeleted: true, groupBy: [SERVICE_ID],
+      measurements: [MEMORY_USAGE_GB, CPU_USAGE, NETWORK_TX_GB, DISK_USAGE_GB, BACKUP_USAGE_GB]) { measurement value tags { serviceId } }
+    project(id: $projectId) { name services { edges { node { id name } } } }
+  }`;
+  let data;
+  try {
+    const res = await fetch(process.env.RAILWAY_API_URL || 'https://backboard.railway.com/graphql/v2', {
+      method: 'POST', signal: AbortSignal.timeout(10_000),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ query, variables: { projectId, start: new Date(r.start).toISOString(), end: new Date(r.end).toISOString() } }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || j.errors?.length) {
+      const msg = j.errors?.[0]?.message || `HTTP ${res.status}`;
+      return { status: /auth|token|permission|not allowed/i.test(msg) ? 'bad_token' : 'error', message: msg.slice(0, 200) };
+    }
+    const names = Object.fromEntries((j.data.project?.services?.edges || []).map((e) => [e.node.id, e.node.name]));
+    const svc = new Map();
+    for (const u of j.data.usage || []) {
+      const id = u.tags?.serviceId || 'boshqa';
+      const row = svc.get(id) || { id, name: names[id] || 'O‘chirilgan servis', parts: {}, total: 0 };
+      const usd = (RW_PRICE[u.measurement] || 0) * Number(u.value || 0);
+      row.parts[u.measurement] = (row.parts[u.measurement] || 0) + usd;
+      row.total += usd;
+      svc.set(id, row);
+    }
+    const services = [...svc.values()].filter((x) => x.total >= 0.0005).sort((a, b) => b.total - a.total);
+    const parts = {};
+    for (const x of services) for (const [k, v] of Object.entries(x.parts)) parts[k] = (parts[k] || 0) + v;
+    data = { status: 'ok', project: j.data.project?.name || null, total: services.reduce((n, x) => n + x.total, 0),
+      parts: Object.entries(parts).map(([k, v]) => ({ key: k, label: RW_LABEL[k] || k, usd: v })).sort((a, b) => b.usd - a.usd),
+      services: services.map((x) => ({ name: x.name, total: x.total })), fetchedAt: Date.now() };
+  } catch (e) {
+    return { status: 'error', message: String(e.message || e).slice(0, 200) };
+  }
+  rwCache.set(r.key, { at: Date.now(), data });
+  return data;
+}
 
 function fileSize(f) { try { return fs.statSync(f).size; } catch { return 0; } }
 
-function report(rangeKey, state) {
-  const range = RANGES[rangeKey] || RANGES['24h'];
-  const since = sinceIso(range.hours);
+async function report(monthKey, state) {
+  const period = monthRange(monthKey);
+  const since = new Date(period.start).toISOString(), until = new Date(period.end + 1).toISOString();
   const q = (sql, ...args) => db.prepare(sql).all(...args);
   const pingStart = process.hrtime.bigint();
   db.prepare('SELECT 1').get();
   const pingMs = round(Number(process.hrtime.bigint() - pingStart) / 1e6, 2);
-  const B = range.bucket;
+  const B = 21600; // 6 soatlik bo'laklar
   const series = q(`SELECT (CAST(strftime('%s', ts) AS INTEGER) / ${B}) * ${B} AS t,
        AVG(rss_mb) AS rss, MAX(rss_mb) AS rss_max, AVG(container_mb) AS container,
        AVG(cpu_pct) AS cpu, MAX(cpu_pct) AS cpu_max,
        SUM(req_count) AS req, SUM(err_count) AS err,
        SUM(avg_ms * req_count) / NULLIF(SUM(req_count), 0) AS avg_ms
-     FROM monitor_resource WHERE ts > ? GROUP BY 1 ORDER BY 1`, since).map((r) => ({ ...r, t: new Date(r.t * 1000).toISOString() }));
+     FROM monitor_resource WHERE ts > ? AND ts < ? GROUP BY 1 ORDER BY 1`, since, until).map((r) => ({ ...r, t: new Date(r.t * 1000).toISOString() }));
   const overall = q(`SELECT AVG(rss_mb) AS rss, AVG(container_mb) AS container, AVG(cpu_pct) AS cpu, MAX(rss_mb) AS rss_max,
        MAX(cpu_pct) AS cpu_max, SUM(req_count) AS req, SUM(err_count) AS err, COUNT(*) AS samples,
        SUM(avg_ms * req_count) / NULLIF(SUM(req_count), 0) AS avg_ms
-     FROM monitor_resource WHERE ts > ?`, since);
+     FROM monitor_resource WHERE ts > ? AND ts < ?`, since, until);
   const errors = q(`SELECT ts, kind, method, path, status, message FROM monitor_event
-     WHERE kind IN ('error','crash') AND ts > ? ORDER BY ts DESC LIMIT 50`, since);
-  const slow = q(`SELECT ts, method, path, status, ms FROM monitor_event WHERE kind = 'slow' AND ts > ? ORDER BY ts DESC LIMIT 30`, since);
+     WHERE kind IN ('error','crash') AND ts > ? AND ts < ? ORDER BY ts DESC LIMIT 50`, since, until);
+  const slow = q(`SELECT ts, method, path, status, ms FROM monitor_event WHERE kind = 'slow' AND ts > ? AND ts < ? ORDER BY ts DESC LIMIT 30`, since, until);
   const lifecycle = q(`SELECT ts, kind, message FROM monitor_event WHERE kind IN ('start','stop','crash') ORDER BY ts DESC, id DESC LIMIT 20`);
   const dbBytes = fileSize(dbFile) + fileSize(dbFile + '-wal');
   let tables;
@@ -181,9 +249,9 @@ function report(rangeKey, state) {
     tables = q(`SELECT name, NULL AS bytes FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`);
   }
   for (const t of tables) t.rows = db.prepare(`SELECT COUNT(*) AS n FROM "${t.name.replace(/"/g, '')}"`).get().n;
-  const users = q(`SELECT role, COUNT(*) AS n, SUM(CASE WHEN first_seen > ? THEN 1 ELSE 0 END) AS new_n FROM app_users GROUP BY role`, since);
+  const users = q(`SELECT role, COUNT(*) AS n, SUM(CASE WHEN first_seen > ? AND first_seen < ? THEN 1 ELSE 0 END) AS new_n FROM app_users GROUP BY role`, since, until);
   const activity = q(`SELECT action, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM audit_log
-     WHERE created_at > ? GROUP BY action`, since);
+     WHERE created_at > ? AND created_at < ? GROUP BY action`, since, until);
   const recentAudit = q(`SELECT a.created_at AS ts, a.action, a.detail, u.name, u.email FROM audit_log a
      LEFT JOIN app_users u ON u.id = a.user_id ORDER BY a.created_at DESC LIMIT 40`)
     .map((r) => { try { return { ...r, detail: r.detail ? JSON.parse(r.detail) : null }; } catch { return r; } });
@@ -191,14 +259,13 @@ function report(rangeKey, state) {
   const o = overall[0] || {};
   const lim = limits();
   const memMb = Number(o.container ?? o.rss ?? lastSample?.rss ?? process.memoryUsage().rss / 1048576);
-  const cpuV = Number(o.cpu ?? 0) / 100;
-  const app = { ram: (memMb / 1024) * PRICES.ramGbMonth, cpu: cpuV * PRICES.cpuVcpuMonth };
+  const spend = await railwaySpend(period);
   const sorted = [...durations].sort((a, b) => a - b);
   const count = (arr, key) => Object.fromEntries(arr.reduce((m, x) => m.set(x[key], (m.get(x[key]) || 0) + 1), new Map()));
   const act = Object.fromEntries(activity.map((r) => [r.action, r]));
 
   return {
-    range: rangeKey in RANGES ? rangeKey : '24h',
+    month: period.key, months: monthList(), currentMonth: period.current,
     generatedAt: Date.now(),
     server: {
       startedAt, uptimeSec: Math.round((Date.now() - startedAt) / 1000), node: process.version,
@@ -225,13 +292,7 @@ function report(rangeKey, state) {
       requests: Number(o.req || 0), errors: Number(o.err || 0), avgMs: round(o.avg_ms, 0),
       samples: Number(o.samples || 0),
     },
-    cost: {
-      prices: PRICES,
-      appRam: round(app.ram, 2), appCpu: round(app.cpu, 2), appMonthly: round(app.ram + app.cpu, 2),
-      dbStorageGb: round(dbBytes / 1073741824, 3), dbStorage: round((dbBytes / 1073741824) * PRICES.volumeGbMonth, 3),
-      note: 'Taxmin: sayt servisining tanlangan davrdagi o‘rtacha xotira va protsessor sarfi bir oyga hisoblangan. '
-        + 'Baza shu servisning diskida (alohida Postgres servisi yo‘q). Aniq summa Railway → Usage bo‘limida.',
-    },
+    spend,
     db: {
       bytes: dbBytes, pingMs,
       file: dbFile,

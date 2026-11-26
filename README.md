@@ -92,7 +92,7 @@ Parol unutilsa: ega "Foydalanuvchi ma'lumotlari"dagi **Parol** tugmasi bilan yan
 
 ## Monitoring (faqat ega)
 
-"Boshqaruv → Monitoring": server holati, xotira/protsessor/so'rovlar grafigi (1 soat – 30 kun), xatolar va sekin so'rovlar, ishga tushish/to'xtash/kutilmagan yiqilishlar, baza hajmi va jadvallari, faollik (kirishlar, xato parollar, jamoa va apellyatsiya holatlari), so'nggi harakatlar va **Railway xarajat taxmini**. Ma'lumot har daqiqada yig'iladi va 30 kun saqlanadi. Baza shu servisning diskida bo'lgani uchun alohida baza servisi xarajati yo'q; aniq summa Railway → Usage'da.
+"Boshqaruv → Monitoring": kalendar oylari bo'yicha (joriy oy va oldingi 2 oy, Toshkent vaqti) server holati, xotira/protsessor/so'rovlar grafigi, xatolar va sekin so'rovlar, ishga tushish/to'xtashlar, baza hajmi, faollik va so'nggi harakatlar. **Sarflangan summa** — tanlangan oyda Railway'da haqiqatda sarflangan pul (servislar va xotira/CPU/disk/trafik bo'yicha), Railway API'dan olinadi va Usage sahifasidagi hisob bilan bir xil. Buning uchun servis Variables'ga `RAILWAY_API_TOKEN` (Railway → Account Settings → Tokens, workspace tokeni) qo'shiladi. O'lchovlar har daqiqada yig'iladi va 100 kun saqlanadi.
 
 ## Xavfsizlik
 
